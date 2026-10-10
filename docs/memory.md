@@ -242,16 +242,47 @@ claim a live integration works when mocked.
 - **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
 - **Known issues/blockers:** None.
 - **Mocked/unconfigured integrations:** Image storage adapter running with signed URL generator in local dev mode.
-- **Last known working commit:** Pending commit for Phase 3.
-- **Next action:** Phase 4 (Safety Evidence Workflow & Rules Engine).
+- **Last known working commit:** `64c8abb` (Phase 3 food listing & compulsory photo evidence).
+- **Next action:** Phase 4 completed; proceed to Phase 5.
+
+#### 2026-10-10 (Session 4) --- Phase 4 Complete: Safety Evidence Workflow & Rules Engine
+
+- **Phase/task:** Phase 4 (Safety evidence workflow)
+- **Decisions:**
+  - Implemented versioned FSSAI surplus food rules engine (`services/api/app/services/safety_rules.py`) with standard `FSSAI-SURPLUS-2019-V1.2`.
+  - Implemented deterministic evaluation enforcing ambient perishable cooked food limits (max 4 hours elapsed between prep and pickup end) and hot-holding limits (max 6 hours).
+  - Built Vision Model Adapter (`services/api/app/integrations/vision_adapter.py`) returning structured dish clarity and container hygiene observations with an explicit disclaimer that vision AI cannot certify microbiological food safety.
+  - Added REST endpoints in `services/api/app/api/v1/safety.py`:
+    - `POST /v1/listings/{id}/assess`: Automated evaluation of safety evidence.
+    - `GET /v1/listings/{id}/safety`: Retrieve safety review panel.
+    - `GET /v1/safety/review-queue`: Reviewer exception queue for coordinators & safety reviewers.
+    - `POST /v1/safety/reviews/{assessment_id}/decide`: Authorized human reviewer clearance or clarification request.
+  - Updated Next.js Operations Console (`apps/web/app/operations/page.tsx`) with live Safety Review Queue allowing authorized reviewers to inspect risk indicators and approve/clear holds.
+- **Files changed / created:**
+  - `services/api/app/schemas/safety.py`
+  - `services/api/app/integrations/vision_adapter.py`
+  - `services/api/app/services/safety_rules.py`
+  - `services/api/app/api/v1/safety.py`
+  - `services/api/app/api/v1/router.py`
+  - `services/api/tests/unit/test_safety.py`
+  - `apps/web/app/operations/page.tsx`
+- **Tests/commands and actual results:**
+  - `python -m pytest services\api\tests` -> 14 passed in 0.32s (verified fresh food eligibility, ambient holding violation triggering ON_HOLD, reviewer queue inspection, and unauthorized reviewer decision rejection).
+  - `npm --workspace=apps/web run build` -> Next.js 14 compiled successfully (7/7 pages generated).
+- **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
+- **Known issues/blockers:** None.
+- **Mocked/unconfigured integrations:** Vision adapter running with deterministic local inference.
+- **Last known working commit:** Pending commit for Phase 4.
+- **Next action:** Phase 5 (Recipient Demand and Capacity).
 
 ## 10. Immediate next action
 
-Proceed with Phase 4 (Safety evidence workflow):
-1. Create versioned, reviewed rules model and record FSSAI guidance parameters.
-2. Define typed evidence assessment output (observations, missing fields, risk indicators).
-3. Implement deterministic completeness and rule verification logic.
-4. Add hold, clarification, and human-reviewer queue.
+Proceed with Phase 5 (Recipient demand and capacity):
+1. Implement timestamped recipient capacity snapshots.
+2. Capture people served, meals needed, demand by food item, and storage capability.
+3. Implement demand freshness / expiry policy.
+4. Build recipient capacity update flow and API endpoints.
+
 
 
 

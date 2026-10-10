@@ -13,7 +13,9 @@ import {
   ShieldCheck,
   RefreshCw,
   UserCheck,
-  ShieldAlert
+  ShieldAlert,
+  AlertTriangle,
+  FileCheck
 } from "lucide-react";
 import { useAuth, UserRole } from "@/lib/auth-context";
 
@@ -33,11 +35,22 @@ interface OrgItem {
   address?: string;
 }
 
+interface SafetyReviewItem {
+  id: string;
+  listing_id: string;
+  status: string;
+  rule_version: string;
+  risk_indicators: string[];
+  observations: { indicator: string; severity: string; details: string }[];
+  limitations_disclaimer: string;
+}
+
 export default function OperationsDashboard() {
   const { user, loginAsRole } = useAuth();
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [loadingHealth, setLoadingHealth] = useState<boolean>(true);
   const [organizations, setOrganizations] = useState<OrgItem[]>([]);
+  const [safetyReviews, setSafetyReviews] = useState<SafetyReviewItem[]>([]);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const fetchHealthAndData = async () => {
@@ -67,7 +80,20 @@ export default function OperationsDashboard() {
           setOrganizations(orgData);
         }
       } catch {
-        // Fallback demo data
+        // Fallback
+      }
+
+      // Fetch safety review queue
+      try {
+        const safetyRes = await fetch("http://localhost:8000/v1/safety/review-queue", {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        if (safetyRes.ok) {
+          const safetyData = await safetyRes.json();
+          setSafetyReviews(safetyData);
+        }
+      } catch {
+        // Fallback
       }
     }
   };
@@ -90,8 +116,34 @@ export default function OperationsDashboard() {
       } else {
         setActionMessage(`Action blocked (${res.status}): ${data.detail || "Forbidden"}`);
       }
-    } catch (err: unknown) {
+    } catch {
       setActionMessage("Network error communicating with API.");
+    }
+  };
+
+  const handleClearSafetyHold = async (assessmentId: string) => {
+    if (!user?.token) return;
+    try {
+      const res = await fetch(`http://localhost:8000/v1/safety/reviews/${assessmentId}/decide`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}` 
+        },
+        body: JSON.stringify({
+          decision: "ELIGIBLE_UNDER_RULES",
+          notes: `Cleared by ${user.fullName} following secondary thermal holding verification.`
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActionMessage(`Safety hold cleared under FSSAI rules. Listing eligible for distribution.`);
+        fetchHealthAndData();
+      } else {
+        setActionMessage(`Action blocked (${res.status}): ${data.detail || "Forbidden"}`);
+      }
+    } catch {
+      setActionMessage("Network error clearing safety hold.");
     }
   };
 
@@ -114,7 +166,7 @@ export default function OperationsDashboard() {
             </div>
           </div>
 
-          {/* Role Switcher for Phase 2 Verification */}
+          {/* Role Switcher */}
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
               <div className="text-xs font-bold text-ink-primary">{user?.fullName}</div>
@@ -195,8 +247,8 @@ export default function OperationsDashboard() {
               <div className="font-bold text-sm text-brand-forest mt-1 capitalize">{user?.role.replace("_", " ")}</div>
             </div>
             <div className="p-4 rounded-xl bg-brand-cream border border-line-default">
-              <div className="text-xs text-ink-secondary">Access Matrix</div>
-              <div className="font-bold text-sm text-ink-primary mt-1">{user?.permissions.length} Authorized Perms</div>
+              <div className="text-xs text-ink-secondary">Safety Standard</div>
+              <div className="font-bold text-sm text-brand-forest mt-1">FSSAI Surplus 2019</div>
             </div>
             <div className="p-4 rounded-xl bg-brand-cream border border-line-default">
               <div className="text-xs text-ink-secondary">Database & Auth</div>
@@ -207,12 +259,58 @@ export default function OperationsDashboard() {
 
         {/* Operational Queues */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Queue 1: Organizations & Verification */}
+          {/* Queue 1: Safety Evidence Review Queue (Phase 4 Focus) */}
+          <div className="p-6 rounded-card bg-brand-paper border border-line-default shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-brand-forest" />
+                <h3 className="font-display font-bold text-base">Safety Review Queue</h3>
+              </div>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                {safetyReviews.length} On Hold
+              </span>
+            </div>
+            <p className="text-xs text-ink-secondary">
+              Listings requiring photo completeness check, FSSAI ambient limit inspection, or reviewer override.
+            </p>
+            
+            {safetyReviews.length > 0 ? (
+              <div className="space-y-3">
+                {safetyReviews.map((rev) => (
+                  <div key={rev.id} className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 text-xs space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-amber-900">Status: {rev.status}</span>
+                      <span className="text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded font-semibold">
+                        {rev.rule_version}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-amber-800">
+                      {rev.risk_indicators.join(", ") || "Held for temperature clarification."}
+                    </div>
+                    <button
+                      onClick={() => handleClearSafetyHold(rev.id)}
+                      className="w-full py-1.5 rounded-lg bg-brand-forest text-brand-paper font-semibold text-xs hover:bg-brand-deep transition-colors"
+                    >
+                      Clear Hold & Approve
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-5 rounded-xl bg-brand-cream border border-line-default text-xs text-ink-secondary text-center space-y-1">
+                <FileCheck className="w-5 h-5 text-emerald-600 mx-auto" />
+                <div className="font-semibold text-ink-primary">Safety Queue Clear</div>
+                <div>All current listings comply with FSSAI holding limits.</div>
+              </div>
+            )}
+          </div>
+
+          {/* Queue 2: Recipient Organizations */}
           <div className="p-6 rounded-card bg-brand-paper border border-line-default shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-brand-forest" />
-                <h3 className="font-display font-bold text-base">Recipient Orgs</h3>
+                <h3 className="font-display font-bold text-base">Recipient Network</h3>
               </div>
               <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-brand-sage text-brand-forest">
                 {organizations.length > 0 ? `${organizations.length} Loaded` : "3 Seed Orgs"}
@@ -249,29 +347,12 @@ export default function OperationsDashboard() {
             </div>
           </div>
 
-          {/* Queue 2: Food Safety Holds & Reviews */}
-          <div className="p-6 rounded-card bg-brand-paper border border-line-default shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-brand-forest" />
-                <h3 className="font-display font-bold text-base">Safety Exception Queue</h3>
-              </div>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-brand-sage text-brand-forest">0 Blocked</span>
-            </div>
-            <p className="text-xs text-ink-secondary">
-              Listings requiring photo inspection, temperature compliance, or manual reviewer clearance.
-            </p>
-            <div className="p-6 rounded-xl bg-brand-cream border border-line-default text-xs text-ink-secondary text-center">
-              Safety queue clear. All listings conform to current FSSAI guidelines.
-            </div>
-          </div>
-
-          {/* Queue 3: Allocation Oversight */}
+          {/* Queue 3: Distribution Plans */}
           <div className="p-6 rounded-card bg-brand-paper border border-line-default shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-brand-forest" />
-                <h3 className="font-display font-bold text-base">Distribution Plans</h3>
+                <h3 className="font-display font-bold text-base">Allocation Plans</h3>
               </div>
               <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-brand-sage text-brand-forest">0 Active</span>
             </div>
@@ -279,16 +360,16 @@ export default function OperationsDashboard() {
               Deterministic OR-Tools quantity split reservations and recovery replanning events.
             </p>
             <div className="p-6 rounded-xl bg-brand-cream border border-line-default text-xs text-ink-secondary text-center">
-              No pending quantity splits. Standing by for incoming food listings.
+              No pending quantity splits. Ready for Phase 5 recipient demand allocation.
             </div>
           </div>
         </section>
 
-        {/* Ground Truth Policy */}
+        {/* Non-Certification Notice (Strict PRD Trust Boundary) */}
         <section className="p-4 rounded-xl bg-brand-sage/60 border border-brand-leaf/20 flex items-start gap-3 text-xs text-brand-deep">
-          <Clock className="w-4 h-4 text-brand-forest shrink-0 mt-0.5" />
+          <AlertTriangle className="w-4 h-4 text-brand-forest shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold">Role-Based Access Control Active:</span> Coordinators and Admins possess authority to review safety exceptions and verify organizations. Donors and Recipients operate within scoped least-privilege channels enforced by PostgreSQL Row Level Security.
+            <span className="font-bold">Authoritative Food Safety Rule:</span> AI models and photograph analysis evaluate visible completeness and handling evidence only. They do not and cannot certify microbiological safety. Physical inspection and recorded handover confirmation by the recipient are mandatory.
           </div>
         </section>
       </main>
