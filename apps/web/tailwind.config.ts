@@ -4,6 +4,10 @@ const config: Config = {
   content: [
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "../../apps/web/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "../../apps/web/src/**/*.{js,ts,jsx,tsx,mdx}",
+    "./apps/web/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./apps/web/src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
