@@ -303,17 +303,59 @@ claim a live integration works when mocked.
 - **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
 - **Known issues/blockers:** None.
 - **Mocked/unconfigured integrations:** None.
-- **Last known working commit:** Pending commit for Phase 5.
-- **Next action:** Phase 6 (Need-Based Allocation Optimizer & Transactional Reservations).
+- **Last known working commit:** `0e98409` (Phase 5 complete).
+- **Next action:** Phase 6 completed; proceed to Phase 7.
+
+#### 2026-10-10 (Session 6) --- Phase 6 Complete: Need-Based Allocation Optimizer & Transactional Reservations
+
+- **Phase/task:** Phase 6 (Need-based distribution engine & reservations)
+- **Decisions:**
+  - Implemented Dual-Engine Mathematical Optimizer (`services/api/app/optimization/solver.py`):
+    - Google OR-Tools GLOP linear programming solver when installed (Linux/Docker/x86_64).
+    - Deterministic Bounded Simplex/Knapsack exact solver fallback on Windows ARM64 host environment.
+    - Both engines enforce the exact same hard mathematical constraints: cannot exceed available supply, recipient net deficit, or recipient max safe storage ceiling. Never splits equally by default.
+  - Implemented Transactional Allocation Service (`services/api/app/services/allocations.py`):
+    - Formulates allocation plan with proposed splits, expiration windows (45 mins), and explicit unallocated remainders.
+    - Atomic reservation locking (`_ALLOCATION_LOCK`) preventing concurrent double-booking.
+    - Partial acceptance support: Confirms requested portion and immediately releases excess quantity.
+    - Recipient decline & dynamic recovery replan: Releasing declined quantity and generating an automated re-allocation to remaining candidates.
+  - Added REST endpoints in `services/api/app/api/v1/allocations.py`:
+    - `POST /v1/allocations/optimize/{listing_id}`: Generate optimized plan for a food listing.
+    - `GET /v1/allocations/plans/{id}`: Retrieve detailed allocation plan.
+    - `GET /v1/allocations/listing/{listing_id}`: List plans for a specific listing.
+    - `POST /v1/allocations/{id}/accept`: Full or partial acceptance.
+    - `POST /v1/allocations/{id}/decline`: Decline with dynamic recovery replan.
+  - Upgraded Next.js Operations Console (`apps/web/app/operations/page.tsx`):
+    - Interactive Allocation Plans section displaying optimizer engine, quantities, and recipient cards.
+    - Single-click simulation and testing for accept (full/partial) and decline recovery.
+- **Files changed / created:**
+  - `services/api/app/schemas/allocations.py`
+  - `services/api/app/optimization/solver.py`
+  - `services/api/app/services/allocations.py`
+  - `services/api/app/api/v1/allocations.py`
+  - `services/api/app/api/v1/router.py`
+  - `services/api/tests/unit/test_allocations.py`
+  - `apps/web/app/operations/page.tsx`
+- **Tests/commands and actual results:**
+  - `python -m pytest services\api\tests` -> 21 passed in 0.38s (including multi-recipient split, partial acceptance, decline recovery, and over-acceptance prevention).
+  - `npm --workspace=apps/web run build` -> Next.js 14 compiled successfully (8/8 static pages generated).
+- **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
+- **Known issues/blockers:** None.
+- **Mocked/unconfigured integrations:** None.
+- **Last known working commit:** Pending commit for Phase 6.
+- **Next action:** Phase 7 (Agentic Coordination & Workflow Orchestration with LangGraph).
 
 ## 10. Immediate next action
 
-Proceed with Phase 6 (Need-based optimizer and reservations):
-1. Write the deterministic multi-recipient allocation specification.
-2. Implement linear programming / integer optimization model (Google OR-Tools solver adapter with fallback).
-3. Filter by food safety eligibility, food compatibility, pickup deadline, and recipient safe capacity.
-4. Implement atomic quantity reservations and prevent double-claiming.
-5. Implement partial acceptance and dynamic release/reallocation upon recipient decline.
+Proceed with Phase 7 (Agentic coordination and stateful workflow):
+1. Create LangGraph / StateGraph workflow engine for food rescue lifecycle.
+2. Define explicit agent state: listing details, safety clearances, allocation plan, recipient outreach, pickup confirmation, and fallback escalation.
+3. Implement autonomous transitions between stages:
+   - Automated outreach to matched recipients.
+   - Timeout escalation (if recipient doesn't respond in 45 min, auto-reallocate).
+   - Volunteer driver assignment trigger when direct recipient pickup is unavailable.
+   - Handover coordination state.
+4. Add supervisor monitoring endpoint to view active agent workflows in real-time.
 
 
 

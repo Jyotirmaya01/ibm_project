@@ -45,12 +45,34 @@ interface SafetyReviewItem {
   limitations_disclaimer: string;
 }
 
+interface AllocationItem {
+  id: string;
+  recipient_id: string;
+  recipient_name: string;
+  requested_kg: number;
+  allocated_kg: number;
+  confirmed_kg?: number;
+  status: string;
+}
+
+interface AllocationPlan {
+  id: string;
+  listing_id: string;
+  total_available_kg: number;
+  total_allocated_kg: number;
+  total_unallocated_kg: number;
+  optimizer_engine: string;
+  status: string;
+  allocations: AllocationItem[];
+}
+
 export default function OperationsDashboard() {
   const { user, loginAsRole } = useAuth();
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [loadingHealth, setLoadingHealth] = useState<boolean>(true);
   const [organizations, setOrganizations] = useState<OrgItem[]>([]);
   const [safetyReviews, setSafetyReviews] = useState<SafetyReviewItem[]>([]);
+  const [allocationPlans, setAllocationPlans] = useState<AllocationPlan[]>([]);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const fetchHealthAndData = async () => {
@@ -144,6 +166,82 @@ export default function OperationsDashboard() {
       }
     } catch {
       setActionMessage("Network error clearing safety hold.");
+    }
+  };
+
+  const handleRunOptimization = async (listingId?: string) => {
+    if (!user?.token) return;
+    try {
+      const targetId = listingId || "00000000-0000-0000-0000-000000000001";
+      const res = await fetch(`http://localhost:8000/v1/allocations/optimize/${targetId}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActionMessage(`Optimization computed using ${data.optimizer_engine}: ${data.total_allocated_kg} kg allocated across ${data.allocations.length} recipient(s).`);
+        setAllocationPlans((prev) => [data, ...prev.filter((p) => p.id !== data.id)]);
+      } else {
+        setActionMessage(`Optimization error (${res.status}): ${data.detail || "Unable to solve"}`);
+      }
+    } catch {
+      setActionMessage("Network error running optimizer.");
+    }
+  };
+
+  const handleAcceptAllocation = async (allocationId: string, qty: number) => {
+    if (!user?.token) return;
+    try {
+      const res = await fetch(`http://localhost:8000/v1/allocations/${allocationId}/accept`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}` 
+        },
+        body: JSON.stringify({ accepted_kg: qty }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActionMessage(`Allocation confirmed for ${data.confirmed_kg} kg.`);
+        setAllocationPlans((plans) =>
+          plans.map((p) => ({
+            ...p,
+            allocations: p.allocations.map((a) => (a.id === allocationId ? { ...a, status: data.status, confirmed_kg: data.confirmed_kg } : a)),
+          }))
+        );
+      } else {
+        setActionMessage(`Accept error: ${data.detail}`);
+      }
+    } catch {
+      setActionMessage("Network error confirming allocation.");
+    }
+  };
+
+  const handleDeclineAllocation = async (allocationId: string) => {
+    if (!user?.token) return;
+    try {
+      const res = await fetch(`http://localhost:8000/v1/allocations/${allocationId}/decline`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}` 
+        },
+        body: JSON.stringify({ reason: "Capacity reached" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActionMessage(`Allocation declined. Atomic recovery replan initiated.`);
+        setAllocationPlans((plans) =>
+          plans.map((p) => ({
+            ...p,
+            allocations: p.allocations.map((a) => (a.id === allocationId ? { ...a, status: data.status } : a)),
+          }))
+        );
+      } else {
+        setActionMessage(`Decline error: ${data.detail}`);
+      }
+    } catch {
+      setActionMessage("Network error declining allocation.");
     }
   };
 
@@ -354,14 +452,89 @@ export default function OperationsDashboard() {
                 <Layers className="w-5 h-5 text-brand-forest" />
                 <h3 className="font-display font-bold text-base">Allocation Plans</h3>
               </div>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-brand-sage text-brand-forest">0 Active</span>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-brand-sage text-brand-forest">
+                {allocationPlans.length} Active
+              </span>
             </div>
             <p className="text-xs text-ink-secondary">
               Deterministic OR-Tools quantity split reservations and recovery replanning events.
             </p>
-            <div className="p-6 rounded-xl bg-brand-cream border border-line-default text-xs text-ink-secondary text-center">
-              No pending quantity splits. Ready for Phase 5 recipient demand allocation.
-            </div>
+
+            <button
+              onClick={() => handleRunOptimization()}
+              className="w-full py-2 px-3 rounded-lg bg-brand-forest text-brand-paper font-semibold text-xs hover:bg-brand-deep transition-all flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Simulate 30kg Surplus Optimization</span>
+            </button>
+
+            {allocationPlans.length > 0 ? (
+              <div className="space-y-3 pt-2">
+                {allocationPlans.map((plan) => (
+                  <div key={plan.id} className="p-3.5 rounded-xl bg-brand-cream border border-line-default text-xs space-y-2.5">
+                    <div className="flex justify-between items-center border-b border-line-default pb-2">
+                      <span className="font-bold text-ink-primary">
+                        {plan.total_allocated_kg} / {plan.total_available_kg} kg Allocated
+                      </span>
+                      <span className="text-[10px] bg-brand-sage text-brand-forest px-1.5 py-0.5 rounded font-semibold">
+                        {plan.optimizer_engine}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {plan.allocations.map((alloc) => (
+                        <div key={alloc.id} className="p-2.5 rounded-lg bg-brand-paper border border-line-default text-[11px] space-y-1.5">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-ink-primary">{alloc.recipient_name}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                              alloc.status === "CONFIRMED" ? "bg-emerald-100 text-emerald-800" :
+                              alloc.status === "PARTIALLY_ACCEPTED" ? "bg-blue-100 text-blue-800" :
+                              alloc.status === "DECLINED" ? "bg-red-100 text-red-800" :
+                              "bg-amber-100 text-amber-800"
+                            }`}>
+                              {alloc.status}
+                            </span>
+                          </div>
+                          <div className="text-ink-secondary flex justify-between">
+                            <span>Offered: <strong className="text-ink-primary">{alloc.allocated_kg} kg</strong></span>
+                            {alloc.confirmed_kg !== undefined && (
+                              <span>Confirmed: <strong className="text-emerald-700">{alloc.confirmed_kg} kg</strong></span>
+                            )}
+                          </div>
+                          {alloc.status === "OFFERED" && (
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                onClick={() => handleAcceptAllocation(alloc.id, alloc.allocated_kg)}
+                                className="flex-1 py-1 rounded bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors"
+                              >
+                                Accept All
+                              </button>
+                              <button
+                                onClick={() => handleAcceptAllocation(alloc.id, Math.round(alloc.allocated_kg * 0.7 * 10) / 10)}
+                                className="flex-1 py-1 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
+                              >
+                                Partial (70%)
+                              </button>
+                              <button
+                                onClick={() => handleDeclineAllocation(alloc.id)}
+                                className="flex-1 py-1 rounded bg-red-100 text-red-700 font-medium hover:bg-red-200 transition-colors"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-5 rounded-xl bg-brand-cream border border-line-default text-xs text-ink-secondary text-center space-y-1">
+                <div>No active plans yet.</div>
+                <div className="text-[11px]">Click above to run optimization against seed recipient capacities.</div>
+              </div>
+            )}
           </div>
         </section>
 

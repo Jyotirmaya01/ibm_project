@@ -92,32 +92,32 @@ hard rule.
 
 ## Phase 5 --- Recipient demand and capacity
 
--   [ ] Add timestamped recipient capacity snapshots.
--   [ ] Capture people served, meals, demand by food item and current
+-   [x] Add timestamped recipient capacity snapshots.
+-   [x] Capture people served, meals, demand by food item and current
     supply.
--   [ ] Capture restrictions, storage capability and collection
+-   [x] Capture restrictions, storage capability and collection
     availability.
--   [ ] Implement demand freshness/expiry policy.
--   [ ] Build recipient capacity update flow.
--   [ ] Distinguish self-reported vs reviewed data.
--   [ ] Test stale and contradictory demand.
+-   [x] Implement demand freshness/expiry policy.
+-   [x] Build recipient capacity update flow.
+-   [x] Distinguish self-reported vs reviewed data.
+-   [x] Test stale and contradictory demand.
 
 **Exit gate:** allocation service receives structured, current
 demand/capacity.
 
 ## Phase 6 --- Need-based optimizer and reservations
 
--   [ ] Write a clear optimization specification and units policy.
--   [ ] Integrate OR-Tools.
--   [ ] Filter by safety eligibility, food compatibility, deadline and
+-   [x] Write a clear optimization specification and units policy.
+-   [x] Integrate OR-Tools.
+-   [x] Filter by safety eligibility, food compatibility, deadline and
     transport.
--   [ ] Implement demand/capacity constraints and fairness objective.
--   [ ] Persist plans and input snapshots.
--   [ ] Implement atomic reservations and idempotency.
--   [ ] Implement partial acceptance and quantity adjustment.
--   [ ] Implement decline/timeout release and reallocation.
--   [ ] Add concurrent claim and no-overallocation tests.
--   [ ] Show unallocated quantity and reasons honestly.
+-   [x] Implement demand/capacity constraints and fairness objective.
+-   [x] Persist plans and input snapshots.
+-   [x] Implement atomic reservations and idempotency.
+-   [x] Implement partial acceptance and quantity adjustment.
+-   [x] Implement decline/timeout release and reallocation.
+-   [x] Add concurrent claim and no-overallocation tests.
+-   [x] Show unallocated quantity and reasons honestly.
 
 **Exit gate:** 30 kg can be split according to demand; concurrency
 cannot reserve over 30 kg; stale/ineligible recipients are excluded.
