@@ -1,58 +1,134 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { 
   Building2, 
   Utensils, 
-  Truck, 
-  ShieldCheck, 
   ArrowRight, 
   CheckCircle2, 
-  LogIn, 
-  Lock, 
-  Mail,
-  Heart
+  Mail, 
+  KeyRound, 
+  Sparkles, 
+  AlertCircle,
+  RefreshCw,
+  UserPlus,
+  User,
+  Shield,
+  Clock,
+  HeartHandshake,
+  Check,
+  Lock
 } from "lucide-react";
 import { useAuth, UserRole } from "@/lib/auth-context";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
-  const { user, loginAsRole, logout } = useAuth();
-  const [customEmail, setCustomEmail] = useState("");
-  const [customPassword, setCustomPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState<UserRole>("donor");
-  const [msg, setMsg] = useState("");
+  const searchParams = useSearchParams();
+  const { user, sendVerificationCode, verifyEmailCode } = useAuth();
 
-  const handleRoleSelect = async (role: UserRole, targetPath: string) => {
-    await loginAsRole(role);
-    setMsg(`Logged in successfully as ${role.toUpperCase()}`);
-    setTimeout(() => {
-      router.push(targetPath);
-    }, 400);
+  // If already authenticated, redirect straight to role-specific dashboard
+  useEffect(() => {
+    if (user) {
+      if (user.role === "donor") {
+        router.push("/dashboard/donor");
+      } else {
+        router.push("/dashboard/recipient");
+      }
+    }
+  }, [user, router]);
+
+  // Read role from query param or default to donor
+  const initialRoleParam = searchParams.get("role");
+  const [role, setRole] = useState<UserRole>(initialRoleParam === "recipient" ? "recipient" : "donor");
+
+  // Keep state in sync if query param changes
+  useEffect(() => {
+    const qRole = searchParams.get("role");
+    if (qRole === "recipient") {
+      setRole("recipient");
+    } else if (qRole === "donor") {
+      setRole("donor");
+    }
+  }, [searchParams]);
+
+  const [fullName, setFullName] = useState("");
+  const [orgName, setOrgName] = useState("");
+  const [email, setEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+
+  const [step, setStep] = useState<"enter_email" | "enter_otp">("enter_email");
+  const [loading, setLoading] = useState(false);
+  const [previewOtp, setPreviewOtp] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const isDonor = role === "donor";
+
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !email.includes("@")) {
+      setErrorMsg("Please enter a valid email address.");
+      return;
+    }
+    if (!fullName.trim()) {
+      setErrorMsg(
+        isDonor 
+          ? "Please enter the Donor Coordinator name." 
+          : "Please enter the Ashram Receptionist / Caretaker name."
+      );
+      return;
+    }
+
+    setErrorMsg("");
+    setLoading(true);
+    try {
+      const result = await sendVerificationCode(email, role, fullName);
+      setPreviewOtp(result.previewCode || null);
+      setSuccessMsg(`Temporary verification OTP sent to ${email}`);
+      setStep("enter_otp");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to send verification OTP");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCustomSubmit = async (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customEmail) return;
-    await loginAsRole(selectedRole);
-    setMsg(`Authenticated as ${selectedRole.toUpperCase()}`);
-    setTimeout(() => {
-      if (selectedRole === "donor") router.push("/listings/create");
-      else if (selectedRole === "recipient") router.push("/recipients/capacity");
-      else if (selectedRole === "volunteer") router.push("/handover");
-      else router.push("/operations");
-    }, 400);
+    if (!otpCode || otpCode.length < 4) {
+      setErrorMsg("Please enter the 6-digit OTP code received.");
+      return;
+    }
+    setErrorMsg("");
+    setLoading(true);
+    try {
+      await verifyEmailCode(email, otpCode, role, fullName, orgName);
+      setSuccessMsg("Email verified! Redirecting to your personal dashboard...");
+      
+      // Strict redirect to role-specific dashboard only after OTP is verified
+      setTimeout(() => {
+        if (role === "donor") {
+          router.push("/dashboard/donor");
+        } else {
+          router.push("/dashboard/recipient");
+        }
+      }, 500);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Invalid verification OTP code.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-[#14221D] flex flex-col justify-between py-8 px-6 font-body">
+    <div className="min-h-screen bg-[#FDFCF7] text-[#14221D] flex flex-col justify-between py-8 px-6 font-body">
       
       {/* Top Header */}
-      <header className="max-w-5xl mx-auto w-full flex items-center justify-between pb-6 border-b border-gray-200">
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#164333] to-[#1F5D46] flex items-center justify-center text-white font-bold text-xl shadow-md">
+      <header className="max-w-3xl mx-auto w-full flex items-center justify-between pb-6 border-b border-gray-200">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#1F5D46] flex items-center justify-center text-white font-bold text-xl shadow-xs">
             अ
           </div>
           <div>
@@ -60,291 +136,340 @@ export default function LoginPage() {
               AnnaSetu AI
             </span>
             <span className="text-xs text-gray-500 block">
-              Identity & Access Management
+              {isDonor ? "Food Donor Portal Sign In" : "Ashram & Receptionist Intake Sign In"}
             </span>
           </div>
         </Link>
 
-        {user && (
-          <div className="flex items-center gap-3 text-xs">
-            <span className="hidden sm:inline-block text-gray-600">
-              Active Session: <strong>{user.fullName}</strong> ({user.role.toUpperCase()})
-            </span>
-            <button
-              onClick={logout}
-              className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold transition-colors"
-            >
-              Sign Out
-            </button>
-          </div>
-        )}
+        <Link
+          href={`/signup?role=${role}`}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors"
+        >
+          <UserPlus className="w-3.5 h-3.5" />
+          <span>New {isDonor ? "Donor" : "Ashram"}? Register</span>
+        </Link>
       </header>
 
       {/* Main Container */}
-      <main className="max-w-5xl mx-auto w-full py-10 space-y-10">
+      <main className="max-w-2xl mx-auto w-full py-8 space-y-6">
         
-        {/* Title */}
-        <div className="text-center max-w-xl mx-auto space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#14221D]">
-            Sign In to AnnaSetu
+        {/* Role Switcher Tabs */}
+        <div className="bg-gray-100/80 p-1.5 rounded-2xl flex items-center gap-2 max-w-md mx-auto">
+          <button
+            type="button"
+            onClick={() => {
+              setRole("donor");
+              setErrorMsg("");
+              setStep("enter_email");
+            }}
+            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+              isDonor
+                ? "bg-white text-[#1F5D46] shadow-xs"
+                : "text-gray-500 hover:text-gray-800"
+            }`}
+          >
+            <Utensils className="w-4 h-4 text-amber-600" />
+            <span>Food Donor / Caterer</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setRole("recipient");
+              setErrorMsg("");
+              setStep("enter_email");
+            }}
+            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+              !isDonor
+                ? "bg-white text-[#1F5D46] shadow-xs"
+                : "text-gray-500 hover:text-gray-800"
+            }`}
+          >
+            <Building2 className="w-4 h-4 text-blue-600" />
+            <span>Ashram / Receptionist</span>
+          </button>
+        </div>
+
+        {/* Dynamic Header Based on Role */}
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-1 border shadow-2xs">
+            {isDonor ? (
+              <span className="bg-amber-50 text-amber-900 border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Utensils className="w-3 h-3 text-amber-600" />
+                Caterers • Banquets • Restaurants • Event Planners
+              </span>
+            ) : (
+              <span className="bg-blue-50 text-blue-900 border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Building2 className="w-3 h-3 text-blue-600" />
+                Ashrams • Night Shelters • Orphanages • Community Kitchens
+              </span>
+            )}
+          </div>
+
+          <h1 className="text-3xl font-extrabold text-[#14221D]">
+            {isDonor ? "Food Donor & Catering Sign In" : "Ashram Receptionist & Intake Sign In"}
           </h1>
-          <p className="text-sm text-gray-600">
-            Select your role below for instant one-click portal access, or sign in with your registered organization credentials.
+          <p className="text-xs sm:text-sm text-gray-600 max-w-lg mx-auto">
+            {isDonor
+              ? "Publish surplus banquet meals, verify thermal shelf-life with AI vision, and coordinate instant volunteer dispatches."
+              : "Review incoming freshly cooked meal offerings, run kitchen safety checks, and communicate directly with food donors."}
           </p>
-          {msg && (
-            <div className="mt-3 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold inline-flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>{msg}</span>
-            </div>
-          )}
         </div>
 
-        {/* 1-Click Role Switcher Cards (The Core Focus Requested) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Dynamic Distinct Role Highlights Card */}
+        <div className={`p-4 rounded-2xl border text-xs transition-all ${
+          isDonor 
+            ? "bg-amber-50/60 border-amber-200/80 text-amber-950" 
+            : "bg-blue-50/60 border-blue-200/80 text-blue-950"
+        }`}>
+          <div className="font-bold flex items-center gap-2 mb-2">
+            <Sparkles className="w-4 h-4 text-[#1F5D46]" />
+            <span>{isDonor ? "Donor Portal Features & Tools" : "Ashram Receptionist Tools & Intake"}</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-gray-700">
+            {isDonor ? (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>AI camera freshness & packaging verification</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Immediate broadcast to nearby ashrams within 5 km</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Direct two-party coordination chat with receiving staff</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Zero-liability digital handover receipt & OTP check</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Real-time incoming food alerts matching dining capacity</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Sensory inspection & temperature checklist prior to intake</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Direct two-party coordination chat with donor manager</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Confidential 6-digit arrival verification OTP</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Privacy Notice Banner */}
+        <div className="p-3.5 rounded-xl bg-gray-50 border border-gray-200 text-xs flex items-center gap-2.5 text-gray-600">
+          <Lock className="w-4 h-4 text-[#1F5D46] shrink-0" />
+          <span>
+            <strong>Strict Privacy Isolation Active:</strong> {isDonor 
+              ? "Your catering menus, kitchen financials, and donor logs remain strictly private and cannot be viewed by ashrams or external recipients." 
+              : "Your shelter resident numbers, meal intake schedules, and pantry data are strictly private and shielded from external donors."}
+          </span>
+        </div>
+
+        {/* Status Alerts */}
+        {errorMsg && (
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{successMsg}</span>
+          </div>
+        )}
+
+        {/* Live Code Dev / Testing Banner */}
+        {previewOtp && step === "enter_otp" && (
+          <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-300 text-amber-900 text-xs space-y-1 shadow-xs">
+            <div className="flex items-center gap-2 font-bold text-amber-800">
+              <Sparkles className="w-4 h-4 text-amber-600" />
+              <span>Temporary Verification OTP Dispatched</span>
+            </div>
+            <p className="text-gray-600">
+              In production, this code is sent to <strong>{email}</strong>. For instant local testing, use:
+            </p>
+            <div className="text-2xl font-mono font-extrabold text-[#1F5D46] tracking-widest pt-1">
+              {previewOtp}
+            </div>
+          </div>
+        )}
+
+        {/* Login Form Box */}
+        <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm space-y-6">
           
-          {/* 1. Food Donor Card */}
-          <div className="p-6 rounded-2xl bg-white border-2 border-amber-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700">
-                  <Utensils className="w-6 h-6" />
+          {step === "enter_email" ? (
+            <form onSubmit={handleSendOtp} className="space-y-5">
+              
+              {/* Name & Organization Customized by Role */}
+              <div className="space-y-4 pt-1">
+                
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">
+                    {isDonor ? "Donor Coordinator / Manager Name" : "Ashram Receptionist / Caretaker Name"}
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+                    <input
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder={isDonor ? "e.g. Ramesh Sharma (Catering Incharge)" : "e.g. Swami Anand / Sister Priya (Ashram Receptionist)"}
+                      className="w-full pl-10 pr-3.5 py-2.5 text-xs rounded-xl border border-gray-300 focus:outline-none focus:border-[#1F5D46]"
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    {isDonor 
+                      ? "This name will appear on your food dispatch receipts." 
+                      : "This name will identify you in the arrival handover chat."}
+                  </p>
                 </div>
-                <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                  Donors & Caterers
-                </span>
-              </div>
 
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  I Want to Donate Food
-                </h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  Wedding halls, event organizers, corporate cafeterias, and restaurants with surplus wholesome meals.
-                </p>
-              </div>
-
-              <ul className="text-xs text-gray-600 space-y-1.5 pt-2">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span>List unconsumed surplus with dish & weight breakdown</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span>Upload compulsory photo evidence for FSSAI verification</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span>Track real-time driver dispatch & verified meal receipts</span>
-                </li>
-              </ul>
-            </div>
-
-            <button
-              onClick={() => handleRoleSelect("donor", "/listings/create")}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm shadow-sm transition-all"
-            >
-              <span>Continue as Food Donor</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* 2. Food Recipient Card */}
-          <div className="p-6 rounded-2xl bg-white border-2 border-blue-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700">
-                  <Building2 className="w-6 h-6" />
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">
+                    {isDonor ? "Catering / Banquet / Restaurant Name" : "Ashram / Community Shelter Name"}
+                  </label>
+                  <div className="relative">
+                    {isDonor ? (
+                      <Utensils className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+                    ) : (
+                      <Building2 className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+                    )}
+                    <input
+                      type="text"
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      placeholder={
+                        isDonor
+                          ? "e.g. Royal Palace Banquet & Caterers"
+                          : "e.g. Shanti Annakshetra Community Ashram"
+                      }
+                      className="w-full pl-10 pr-3.5 py-2.5 text-xs rounded-xl border border-gray-300 focus:outline-none focus:border-[#1F5D46]"
+                    />
+                  </div>
                 </div>
-                <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
-                  Ashrams & Shelters
-                </span>
-              </div>
 
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  I Need Food for Our Shelter
-                </h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  Verified orphanages, elderly ashrams, night shelters, and community kitchens serving meals to those in need.
-                </p>
-              </div>
-
-              <ul className="text-xs text-gray-600 space-y-1.5 pt-2">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span>Broadcast live daily occupancy & meal deficit</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span>Specify dietary requirements (e.g., Pure Vegetarian)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span>Conduct physical aroma/temp inspection & verify with OTP PIN</span>
-                </li>
-              </ul>
-            </div>
-
-            <button
-              onClick={() => handleRoleSelect("recipient", "/recipients/capacity")}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-sm transition-all"
-            >
-              <span>Continue as Food Recipient</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* 3. Volunteer Driver Card */}
-          <div className="p-6 rounded-2xl bg-white border-2 border-purple-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-700">
-                  <Truck className="w-6 h-6" />
+                {/* Email Input */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">
+                    {isDonor ? "Official Donor Email Address" : "Ashram Reception / Official Email Address"}
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={isDonor ? "donor@caterer.com" : "reception@ashram.org"}
+                      className="w-full pl-10 pr-3.5 py-2.5 text-xs rounded-xl border border-gray-300 focus:outline-none focus:border-[#1F5D46]"
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    We will send a secure 6-digit OTP code to verify your session.
+                  </p>
                 </div>
-                <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-purple-50 text-purple-800 border border-purple-200">
-                  Logistics & Delivery
-                </span>
               </div>
 
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Volunteer Driver
-                </h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  Community delivery partners transporting sealed, hot/cold insulated food bins safely.
-                </p>
-              </div>
-
-              <ul className="text-xs text-gray-600 space-y-1.5 pt-2">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                  <span>Accept rescue delivery requests with route & ETA</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                  <span>Coordinate with donors & recipients via masked in-app chat</span>
-                </li>
-              </ul>
-            </div>
-
-            <button
-              onClick={() => handleRoleSelect("volunteer", "/handover")}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-sm transition-all"
-            >
-              <span>Continue as Volunteer Driver</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* 4. Operations & Safety Reviewer Card */}
-          <div className="p-6 rounded-2xl bg-white border-2 border-emerald-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  Operations & Safety
-                </span>
-              </div>
-
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Operations Console
-                </h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  FSSAI safety reviewers, NGO network coordinators, and platform auditors.
-                </p>
-              </div>
-
-              <ul className="text-xs text-gray-600 space-y-1.5 pt-2">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Review held food items with holding duration warnings</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Monitor live audit log stream and verified impact ledger</span>
-                </li>
-              </ul>
-            </div>
-
-            <button
-              onClick={() => handleRoleSelect("coordinator", "/operations")}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1F5D46] hover:bg-[#164333] text-white font-bold text-sm shadow-sm transition-all"
-            >
-              <span>Continue as Operations Coordinator</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
-        </div>
-
-        {/* Secondary: Standard Email/Password Form */}
-        <div className="max-w-md mx-auto pt-6 border-t border-gray-200">
-          <form onSubmit={handleCustomSubmit} className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm space-y-4">
-            <h3 className="font-bold text-sm text-gray-900 text-center">
-              Or Sign In with Organization Email
-            </h3>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-700">Email Address</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                <input
-                  type="email"
-                  value={customEmail}
-                  onChange={(e) => setCustomEmail(e.target.value)}
-                  placeholder="name@organization.org"
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-300 focus:outline-none focus:border-[#1F5D46]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-700">Password</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                <input
-                  type="password"
-                  value={customPassword}
-                  onChange={(e) => setCustomPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-300 focus:outline-none focus:border-[#1F5D46]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-700">Select Role</label>
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value as UserRole)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 focus:outline-none focus:border-[#1F5D46]"
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 rounded-xl bg-[#1F5D46] hover:bg-[#164333] text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 mt-2"
               >
-                <option value="donor">Food Donor (Caterer / Banquets)</option>
-                <option value="recipient">Food Recipient (Ashram / Shelter)</option>
-                <option value="volunteer">Volunteer Driver</option>
-                <option value="coordinator">Operations Coordinator</option>
-              </select>
-            </div>
+                {loading && <RefreshCw className="w-4 h-4 animate-spin" />}
+                <span>Send {isDonor ? "Donor" : "Ashram"} Sign-In OTP</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
 
-            <button
-              type="submit"
-              className="w-full py-2.5 rounded-xl bg-gray-900 hover:bg-black text-white font-bold text-xs transition-colors"
-            >
-              Sign In
-            </button>
-          </form>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
+              
+              <div className="text-center space-y-1.5 pb-2">
+                <span className="text-xs text-gray-600 block">
+                  Verification OTP sent to <strong>{email}</strong>
+                </span>
+                <span className="text-xs text-gray-500 block">
+                  Signing in as: <strong>{fullName}</strong> ({isDonor ? "Food Donor / Caterer" : "Ashram Receptionist"})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStep("enter_email")}
+                  className="text-xs text-[#1F5D46] font-semibold underline block mx-auto pt-1"
+                >
+                  Change email or details
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block text-center">
+                  Enter 6-Digit Email OTP
+                </label>
+                <div className="relative max-w-xs mx-auto">
+                  <KeyRound className="w-4 h-4 text-gray-400 absolute left-4 top-3.5" />
+                  <input
+                    type="text"
+                    maxLength={6}
+                    required
+                    autoFocus
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                    placeholder="123456"
+                    className="w-full pl-11 pr-4 py-3 text-xl font-mono font-bold tracking-widest text-center rounded-xl border border-gray-300 focus:outline-none focus:border-[#1F5D46]"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 rounded-xl bg-[#1F5D46] hover:bg-[#164333] text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2"
+              >
+                {loading && <RefreshCw className="w-4 h-4 animate-spin" />}
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Verify OTP & Enter {isDonor ? "Donor" : "Ashram"} Dashboard</span>
+              </button>
+
+            </form>
+          )}
+
         </div>
 
       </main>
 
       {/* Footer */}
-      <footer className="text-center text-xs text-gray-500 pt-8">
-        AnnaSetu AI • Secure Multi-Role Food Rescue Architecture
+      <footer className="text-center text-xs text-gray-400 pt-6">
+        AnnaSetu AI • Zero False Claims • Verified Email Authentication
       </footer>
 
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#FDFCF7] flex items-center justify-center text-sm text-gray-500">
+        Loading AnnaSetu authentication...
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

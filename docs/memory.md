@@ -504,12 +504,57 @@ claim a live integration works when mocked.
 - **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
 - **Known issues/blockers:** None.
 - **Mocked/unconfigured integrations:** None.
-- **Last known working commit:** Pending commit for Phase 10.
-- **Next action:** All 10 Phases of AnnaSetu AI are complete and production-ready!
+- **Last known working commit:** `523f32b` (Phase 10 complete).
+- **Next action:** Dedicated role workflows, strict privacy isolation, and GitHub deployment.
+
+#### 2026-10-10 (Session 11) --- Dedicated Stakeholder Workspaces, Strict Role Privacy Barriers, Chat Deduplication & GitHub Repository Sync
+
+- **Phase/task:** UX Refinement, Strict Role Privacy & Isolation, Chat Reliability, and GitHub Sync
+- **Decisions:**
+  - **Editable Donor Contact Person:** Made contact person name fully editable in the Food Donor Dashboard (`apps/web/app/dashboard/donor/page.tsx`), enabling coordinators to supply custom contact person details during surplus food submission.
+  - **Delivery Handover & Chat Deduplication:**
+    - Updated `apps/web/app/handover/page.tsx` and `apps/web/src/lib/shared-listings.ts` to strictly deduplicate chat messages by ID on load and send, resolving duplicate rendering.
+    - Simplified sender participants strictly to two parties: "Donor" and "Receiver" (eliminated redundant labels).
+    - Wrapped `HandoverVerificationPage` with React `<Suspense>` boundary for Next.js App Router query parameter safety.
+  - **Role-Adaptive Authentication with Distinct Content:**
+    - Redesigned `apps/web/app/login/page.tsx` and `apps/web/app/signup/page.tsx` to render completely distinct content based on selected role (`donor` vs `recipient` via URL query params or interactive toggle).
+    - Food Donors see commercial caterer/banquet branding, Good Samaritan liability safe-harbor protections, AI packaging inspection tools, and donor privacy notices.
+    - Ashram Receptionists see shelter intake branding, resident headcount management, sensory & temperature safety inspection checklists, and resident confidentiality guarantees.
+    - Wrapped both pages in React `<Suspense>` boundaries.
+  - **Strict Route Guards & Privacy Isolation:**
+    - Added full-screen privacy barrier components on `/dashboard/donor` (blocking Ashram/Receptionists and redirecting them to `/dashboard/recipient`) and `/dashboard/recipient` (blocking Food Donors and redirecting them to `/dashboard/donor`).
+    - Stripped cross-portal navigation links from top headers to ensure complete role separation.
+    - Updated smart dispatcher at `/dashboard` to automatically route authenticated users strictly to their assigned role portal.
+  - **Scratchpad & Documentation:**
+    - Created and maintained `SCRATCHPAD.md` in workspace root and artifact `scratchpad.md` with active local endpoints and end-to-end testing procedures.
+- **Files changed / created:**
+  - `apps/web/app/login/page.tsx`
+  - `apps/web/app/signup/page.tsx`
+  - `apps/web/app/dashboard/donor/page.tsx`
+  - `apps/web/app/dashboard/recipient/page.tsx`
+  - `apps/web/app/dashboard/page.tsx`
+  - `apps/web/app/handover/page.tsx`
+  - `apps/web/app/page.tsx`
+  - `apps/web/src/lib/shared-listings.ts`
+  - `apps/web/src/lib/auth-context.tsx`
+  - `services/api/app/api/v1/auth.py`
+  - `SCRATCHPAD.md`
+  - `docs/memory.md`
+- **Tests/commands and actual results:**
+  - `curl.exe -I http://localhost:3000/login?role=donor` -> HTTP 200 OK.
+  - `curl.exe -I http://localhost:3000/login?role=recipient` -> HTTP 200 OK.
+  - `curl.exe -I http://localhost:3000/signup?role=donor` -> HTTP 200 OK.
+  - `curl.exe -I http://localhost:3000/signup?role=recipient` -> HTTP 200 OK.
+  - `curl.exe -I http://localhost:3000/handover` -> HTTP 200 OK.
+- **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
+- **Known issues/blockers:** None.
+- **Mocked/unconfigured integrations:** None.
+- **Last known working commit:** Staged and synced to GitHub remote.
+- **Next action:** Project delivery complete and verified on live local daemons.
 
 ## 10. Platform Delivery Status
 
-All 10 Master Phases defined in `docs/tasks.md` and `docs/memory.md` are 100% complete and tested:
+All 10 Master Phases defined in `docs/tasks.md` and `docs/memory.md` plus Session 11 privacy hardening are 100% complete and tested:
 - **Phase 0 & 1:** Monorepo scaffolding, design tokens, FastAPI health check, Next.js web console, Supabase migration schema.
 - **Phase 2:** Multi-role authentication (6 roles) with fine-grained permission matrix and immutable audit trail.
 - **Phase 3:** Compulsory photo evidence upload gate, isolated storage, and listing lifecycle state machine.
@@ -520,6 +565,8 @@ All 10 Master Phases defined in `docs/tasks.md` and `docs/memory.md` are 100% co
 - **Phase 8:** 4-digit OTP digital verification, physical inspection gate, volunteer driver dispatch, and masked in-app chat.
 - **Phase 9:** Operations console, immutable audit trail stream, and authoritative verified impact analytics (0 false successes).
 - **Phase 10:** OWASP security headers, sliding-window rate limiting, structured telemetry, Docker containerization, and synthetic E2E pilot tests.
+- **Session 11:** Dedicated stakeholder workspaces, role-adaptive authentication, strict route privacy barriers, chat deduplication, and GitHub sync.
+
 
 
 
