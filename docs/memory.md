@@ -213,15 +213,45 @@ claim a live integration works when mocked.
 - **Database/migration state:** `20261010000002_auth_triggers.sql` ready to accompany `20261010000001_initial_schema.sql`.
 - **Known issues/blockers:** None.
 - **Mocked/unconfigured integrations:** In local development without live Supabase cloud keys, JWT bearer handler accepts standard mock tokens (`mock-token-<role>`) to permit offline, deterministic unit testing.
-- **Last known working commit:** Pending commit for Phase 2.
-- **Next action:** Phase 3 (Food Listing and Photo Evidence).
+- **Last known working commit:** `93ca69a` (Phase 2 identity & roles).
+- **Next action:** Phase 3 completed; proceed to Phase 4.
+
+#### 2026-10-10 (Session 3) --- Phase 3 Complete: Food Listing & Compulsory Photo Evidence
+
+- **Phase/task:** Phase 3 (Listing and photo evidence)
+- **Decisions:**
+  - Implemented Pydantic domain models in `services/api/app/schemas/listings.py` enforcing strict pickup window timing (`pickup_window_end > pickup_window_start`), positive dish quantities, and explicit food unit types.
+  - Implemented Private Storage adapter in `services/api/app/integrations/storage.py` validating 10MB file limit, image MIME types (JPEG, PNG, WebP), and generating isolated private storage paths.
+  - Built authoritative server-side State Machine in `services/api/app/services/listings.py` (`DRAFT -> SUBMITTED -> EVIDENCE_REVIEW -> AVAILABLE`) with compulsory evidence gate: Attempting publication without photos is strictly rejected with `MissingEvidenceError`.
+  - Added REST endpoints in `services/api/app/api/v1/listings.py` (`POST /v1/listings`, `GET /v1/listings`, `GET /v1/listings/my`, `POST /v1/listings/{id}/photos`, `POST /v1/listings/{id}/items`, `POST /v1/listings/{id}/publish`, `PATCH /v1/listings/{id}/status`).
+  - Added recipient public card redaction to protect exact donor coordinates prior to confirmed reservation.
+  - Built donor creation page (`apps/web/app/listings/create/page.tsx`) with interactive dish photo verification and live FSSAI guidance.
+  - Built recipient surplus discovery feed (`apps/web/app/listings/page.tsx`) displaying photo-verified meal cards, quantities, holding conditions, and locality details.
+- **Files changed / created:**
+  - `services/api/app/schemas/listings.py`
+  - `services/api/app/integrations/storage.py`
+  - `services/api/app/services/listings.py`
+  - `services/api/app/api/v1/listings.py`
+  - `services/api/app/api/v1/router.py`
+  - `services/api/tests/unit/test_listings.py`
+  - `apps/web/app/listings/create/page.tsx`
+  - `apps/web/app/listings/page.tsx`
+- **Tests/commands and actual results:**
+  - `python -m pytest services\api\tests` -> 11 passed in 0.29s (verified draft creation, photoless rejection with 400, photo attachment, valid state transition to SUBMITTED, and invalid jump rejection).
+  - `npm --workspace=apps/web run build` -> Next.js 14 compiled successfully (7/7 pages generated).
+- **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
+- **Known issues/blockers:** None.
+- **Mocked/unconfigured integrations:** Image storage adapter running with signed URL generator in local dev mode.
+- **Last known working commit:** Pending commit for Phase 3.
+- **Next action:** Phase 4 (Safety Evidence Workflow & Rules Engine).
 
 ## 10. Immediate next action
 
-Proceed with Phase 3 (Food listing and safety evidence):
-1. Configure private storage bucket policy and signed URL retrieval.
-2. Implement compulsory photo upload validation (overhead dish photo, preparation time, quantity/unit, perishability, pickup window).
-3. Implement server-side listing state machine (`DRAFT -> SUBMITTED -> EVIDENCE_REVIEW -> AVAILABLE`).
-4. Build donor listing creation flow and recipient listing detail cards.
+Proceed with Phase 4 (Safety evidence workflow):
+1. Create versioned, reviewed rules model and record FSSAI guidance parameters.
+2. Define typed evidence assessment output (observations, missing fields, risk indicators).
+3. Implement deterministic completeness and rule verification logic.
+4. Add hold, clarification, and human-reviewer queue.
+
 
 
