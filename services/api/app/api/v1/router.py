@@ -9,6 +9,8 @@ from app.api.v1.allocations import router as allocations_router
 from app.api.v1.agent import router as agent_router
 from app.api.v1.handover import router as handover_router
 from app.api.v1.chat import router as chat_router
+from app.api.v1.impact import router as impact_router
+from app.api.v1.audit import router as audit_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(health_router)
@@ -21,3 +23,5 @@ api_v1_router.include_router(allocations_router)
 api_v1_router.include_router(agent_router)
 api_v1_router.include_router(handover_router)
 api_v1_router.include_router(chat_router)
+api_v1_router.include_router(impact_router)
+api_v1_router.include_router(audit_router)

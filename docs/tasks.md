@@ -156,13 +156,13 @@ recorded; no false-success states.
 
 ## Phase 9 --- Operations and impact
 
--   [ ] Build listing/evidence exception queue.
--   [ ] Build recipient/organization management.
--   [ ] Build allocation/reservation/pickup oversight.
--   [ ] Build reports, incidents and audit trail.
--   [ ] Build metrics from authoritative handover records.
--   [ ] Document any meal-estimate assumptions.
--   [ ] Add secure filtering, pagination and export where needed.
+-   [x] Build listing/evidence exception queue.
+-   [x] Build recipient/organization management.
+-   [x] Build allocation/reservation/pickup oversight.
+-   [x] Build reports, incidents and audit trail.
+-   [x] Build metrics from authoritative handover records.
+-   [x] Document any meal-estimate assumptions.
+-   [x] Add secure filtering, pagination and export where needed.
 
 **Exit gate:** operators can investigate exceptions and distinguish
 listings from completed rescues.

@@ -44,3 +44,8 @@ async def record_audit_event(
         f"AUDIT_EVENT: actor={actor_id} action={action} resource={resource_type}:{resource_id} details={details}"
     )
     return event
+
+
+def get_audit_events(limit: int = 50) -> list[AuditEventRecord]:
+    """Retrieve recent audit events ordered newest first."""
+    return sorted(AUDIT_LOG_BUFFER, key=lambda e: e.timestamp, reverse=True)[:limit]

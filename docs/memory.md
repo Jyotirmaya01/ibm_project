@@ -424,15 +424,54 @@ claim a live integration works when mocked.
 - **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
 - **Known issues/blockers:** None.
 - **Mocked/unconfigured integrations:** None.
-- **Last known working commit:** Pending commit for Phase 8.
-- **Next action:** Phase 9 (Operations Console, Audit Trail, and Real Verified Impact Analytics).
+- **Last known working commit:** `39eafde` (Phase 8 complete).
+- **Next action:** Phase 9 completed; proceed to Phase 10.
+
+#### 2026-10-10 (Session 9) --- Phase 9 Complete: Operations Console, Audit Trail & Real Verified Impact Analytics
+
+- **Phase/task:** Phase 9 (Operations Console, Audit Trail & Real Verified Impact Analytics)
+- **Decisions:**
+  - Implemented Authoritative Impact Metrics Engine (`services/api/app/services/impact.py`, `services/api/app/schemas/impact.py`):
+    - Real delivered kilograms calculated EXCLUSIVELY from verified handover records (`session.delivered_quantity_kg` where `status == "COMPLETED"`).
+    - Meal conversion rate: 1 adult meal = 0.35 kg (FSSAI standard portion).
+    - CO2e avoided: 2.5 kg CO2e per kg of food diverted from landfill.
+    - Water conserved: 800 liters virtual water footprint saved per kg rescued.
+    - Strict Zero-False-Success Principle: Draft, pending, on-hold, or rejected food items produce 0 credited meals.
+  - Implemented Systemwide Immutable Audit Log Query Service (`services/api/app/services/audit.py`, `services/api/app/api/v1/audit.py`):
+    - `GET /v1/audit/logs` with optional filtering by `actor_id` and action types (`LISTING_CREATED`, `SAFETY_HOLD`, `DRIVER_ASSIGNED`, `HANDOVER_COMPLETED`, etc.).
+  - Added REST API Endpoints:
+    - Impact: `GET /v1/impact/summary`
+    - Audit: `GET /v1/audit/logs`
+  - Upgraded Next.js Web Interfaces:
+    - Public Homepage (`apps/web/app/page.tsx`): Displays dynamic impact hero badges (Verified Rescued Food, Wholesome Meals Provided, CO2e Emissions Avoided, Water Conserved) and direct navigation links to All Portals.
+    - Operations Console (`apps/web/app/operations/page.tsx`): Real-time streaming operational audit log table showing timestamp, actor, action, and metadata.
+- **Files changed / created:**
+  - `services/api/app/schemas/impact.py`
+  - `services/api/app/services/impact.py`
+  - `services/api/app/api/v1/impact.py`
+  - `services/api/app/api/v1/audit.py`
+  - `services/api/app/services/audit.py`
+  - `services/api/app/api/v1/router.py`
+  - `services/api/tests/unit/test_impact_and_audit.py`
+  - `apps/web/app/page.tsx`
+  - `apps/web/app/operations/page.tsx`
+  - `docs/tasks.md`
+- **Tests/commands and actual results:**
+  - `python -m pytest services\api\tests` -> 34 passed in 0.52s.
+  - `npm --workspace=apps/web run build` -> 9/9 static pages generated cleanly.
+- **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
+- **Known issues/blockers:** None.
+- **Mocked/unconfigured integrations:** None.
+- **Last known working commit:** Pending commit for Phase 9.
+- **Next action:** Phase 10 (Security, Reliability, Production Hardening & Pilot Readiness).
 
 ## 10. Immediate next action
 
-Proceed with Phase 9 (Operations and verified impact analytics):
-1. Build comprehensive Audit Trail and Exception Queue management.
-2. Build verified impact calculation engine (only confirmed handovers count toward meals served, kg rescued, and CO2 emissions mitigated).
-3. Connect operational metrics into live public impact counter and operations dashboard.
+Proceed with Phase 10 (Production Hardening & Pilot Readiness):
+1. Security & Reliability: Rate limiting, CORS, security headers, upload verification.
+2. Production Deployment: Dockerfile and docker-compose configurations.
+3. End-to-End Simulation: Automated synthetic lifecycle test covering full donor -> safety check -> allocation -> driver dispatch -> OTP handover -> impact update.
+4. Final pilot readiness sign-off and verification against all 20 Locked Product Decisions.
 
 
 

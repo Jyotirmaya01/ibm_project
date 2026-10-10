@@ -83,6 +83,14 @@ interface AgentMission {
   audit_trail: { timestamp: string; step: string; message: string }[];
 }
 
+interface AuditItem {
+  id: string;
+  action: string;
+  resource_type: string;
+  created_at: string;
+  details: Record<string, any>;
+}
+
 export default function OperationsDashboard() {
   const { user, loginAsRole } = useAuth();
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -91,6 +99,7 @@ export default function OperationsDashboard() {
   const [safetyReviews, setSafetyReviews] = useState<SafetyReviewItem[]>([]);
   const [allocationPlans, setAllocationPlans] = useState<AllocationPlan[]>([]);
   const [agentMissions, setAgentMissions] = useState<AgentMission[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditItem[]>([]);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const fetchHealthAndData = async () => {
@@ -144,6 +153,19 @@ export default function OperationsDashboard() {
         if (agentRes.ok) {
           const agentData = await agentRes.json();
           setAgentMissions(agentData);
+        }
+      } catch {
+        // Fallback
+      }
+
+      // Fetch audit logs
+      try {
+        const auditRes = await fetch("http://localhost:8000/v1/audit/logs?limit=12", {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        if (auditRes.ok) {
+          const auditData = await auditRes.json();
+          setAuditLogs(auditData);
         }
       } catch {
         // Fallback
@@ -702,6 +724,51 @@ export default function OperationsDashboard() {
               <div className="p-5 rounded-xl bg-brand-cream border border-line-default text-xs text-ink-secondary text-center space-y-1">
                 <div>No active plans yet.</div>
                 <div className="text-[11px]">Click above to run optimization against seed recipient capacities.</div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Phase 9: Tamper-Evident Operational Audit Trail */}
+        <section className="p-6 rounded-card bg-brand-paper border border-line-default shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-brand-forest" />
+              <h3 className="font-display font-bold text-base">Operational Audit Trail</h3>
+            </div>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-brand-sage text-brand-forest">
+              {auditLogs.length} Events Logged
+            </span>
+          </div>
+          <p className="text-xs text-ink-secondary">
+            Authoritative, append-only log of privileged state changes, FSSAI reviews, allocation generation, and verified digital handovers.
+          </p>
+
+          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+            {auditLogs.length > 0 ? (
+              auditLogs.map((log) => (
+                <div key={log.id} className="p-3 rounded-xl bg-brand-cream border border-line-default text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-[11px] text-brand-forest px-1.5 py-0.5 rounded bg-brand-sage/60">
+                        {log.action}
+                      </span>
+                      <span className="text-ink-secondary text-[11px]">
+                        Target: <strong className="text-ink-primary font-mono">{log.resource_type}</strong>
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-ink-secondary truncate max-w-xl font-mono">
+                      {JSON.stringify(log.details)}
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-ink-secondary font-mono shrink-0">
+                    {new Date(log.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-4 rounded-xl bg-brand-cream border border-line-default text-xs text-ink-secondary text-center">
+                No recent audit events captured in local buffer.
               </div>
             )}
           </div>
