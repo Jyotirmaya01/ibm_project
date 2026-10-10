@@ -124,14 +124,14 @@ cannot reserve over 30 kg; stale/ineligible recipients are excluded.
 
 ## Phase 7 --- Agentic orchestration
 
--   [ ] Add persistent LangGraph workflow.
--   [ ] Implement intake, evidence, discovery and demand nodes.
--   [ ] Expose optimizer as a validated tool.
--   [ ] Implement coordination and recovery nodes.
--   [ ] Add timeouts, bounded retries and idempotency.
--   [ ] Add human checkpoints for configured exceptions.
--   [ ] Add workflow trace/correlation IDs and operations view.
--   [ ] Test declines, timeouts, stale data, tool errors and retries.
+-   [x] Add persistent LangGraph workflow.
+-   [x] Implement intake, evidence, discovery and demand nodes.
+-   [x] Expose optimizer as a validated tool.
+-   [x] Implement coordination and recovery nodes.
+-   [x] Add timeouts, bounded retries and idempotency.
+-   [x] Add human checkpoints for configured exceptions.
+-   [x] Add workflow trace/correlation IDs and operations view.
+-   [x] Test declines, timeouts, stale data, tool errors and retries.
 
 **Exit gate:** the agent can replan a failed match without corrupting
 reservations or inventing completion.

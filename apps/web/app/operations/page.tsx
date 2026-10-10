@@ -15,7 +15,10 @@ import {
   UserCheck,
   ShieldAlert,
   AlertTriangle,
-  FileCheck
+  FileCheck,
+  Bot,
+  Play,
+  Zap
 } from "lucide-react";
 import { useAuth, UserRole } from "@/lib/auth-context";
 
@@ -66,6 +69,20 @@ interface AllocationPlan {
   allocations: AllocationItem[];
 }
 
+interface AgentMission {
+  mission_id: string;
+  listing_id: string;
+  stage: string;
+  food_name: string;
+  total_quantity_kg: number;
+  safety_cleared: boolean;
+  allocated_kg: number;
+  requires_human_review: boolean;
+  human_checkpoint_reason?: string;
+  human_review_resolved: boolean;
+  audit_trail: { timestamp: string; step: string; message: string }[];
+}
+
 export default function OperationsDashboard() {
   const { user, loginAsRole } = useAuth();
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -73,6 +90,7 @@ export default function OperationsDashboard() {
   const [organizations, setOrganizations] = useState<OrgItem[]>([]);
   const [safetyReviews, setSafetyReviews] = useState<SafetyReviewItem[]>([]);
   const [allocationPlans, setAllocationPlans] = useState<AllocationPlan[]>([]);
+  const [agentMissions, setAgentMissions] = useState<AgentMission[]>([]);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const fetchHealthAndData = async () => {
@@ -113,6 +131,19 @@ export default function OperationsDashboard() {
         if (safetyRes.ok) {
           const safetyData = await safetyRes.json();
           setSafetyReviews(safetyData);
+        }
+      } catch {
+        // Fallback
+      }
+
+      // Fetch agent missions
+      try {
+        const agentRes = await fetch("http://localhost:8000/v1/agent/missions", {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        if (agentRes.ok) {
+          const agentData = await agentRes.json();
+          setAgentMissions(agentData);
         }
       } catch {
         // Fallback
@@ -245,6 +276,49 @@ export default function OperationsDashboard() {
     }
   };
 
+  const handleLaunchAgentMission = async () => {
+    if (!user?.token) return;
+    try {
+      const listingId = "00000000-0000-0000-0000-000000000001";
+      const res = await fetch(`http://localhost:8000/v1/agent/missions/start/${listingId}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActionMessage(`Agent Mission ${data.mission_id} launched! Stage: ${data.stage} (${data.allocated_kg}kg allocated).`);
+        setAgentMissions((prev) => [data, ...prev.filter((m) => m.mission_id !== data.mission_id)]);
+      } else {
+        setActionMessage(`Agent error (${res.status}): ${data.detail || "Workflow execution failed"}`);
+      }
+    } catch {
+      setActionMessage("Network error launching agent workflow.");
+    }
+  };
+
+  const handleResumeAgentMission = async (missionId: string) => {
+    if (!user?.token) return;
+    try {
+      const res = await fetch(`http://localhost:8000/v1/agent/missions/${missionId}/resume`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}` 
+        },
+        body: JSON.stringify({ notes: `Approved by ${user.fullName} via Operations Console.` }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActionMessage(`Agent Mission ${missionId} resumed! Current stage: ${data.stage}`);
+        setAgentMissions((prev) => prev.map((m) => (m.mission_id === missionId ? data : m)));
+      } else {
+        setActionMessage(`Resume error: ${data.detail}`);
+      }
+    } catch {
+      setActionMessage("Network error resuming mission.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-brand-cream text-ink-primary font-body">
       {/* Header */}
@@ -353,6 +427,92 @@ export default function OperationsDashboard() {
               <div className="font-bold text-sm text-brand-forest mt-1">Supabase + RLS Active</div>
             </div>
           </div>
+        </section>
+
+        {/* Phase 7: LangGraph Agent Missions Orchestration Section */}
+        <section className="p-6 rounded-card bg-brand-paper border border-line-default shadow-sm space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Bot className="w-5 h-5 text-brand-forest" />
+                <h2 className="text-lg font-bold font-display">LangGraph Autonomous Missions</h2>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-sage text-brand-forest">
+                  StateGraph Engine
+                </span>
+              </div>
+              <p className="text-xs text-ink-secondary mt-1">
+                Autonomous multi-agent lifecycle: Intake validation → FSSAI safety gate → Demand discovery → Deterministic optimization → Multi-recipient outreach → Coordination.
+              </p>
+            </div>
+            <button
+              onClick={() => handleLaunchAgentMission()}
+              className="py-2.5 px-4 rounded-lg bg-brand-forest text-brand-paper font-semibold text-xs hover:bg-brand-deep transition-all flex items-center justify-center gap-2 shadow-sm shrink-0"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+              <span>Launch Autonomous Mission</span>
+            </button>
+          </div>
+
+          {agentMissions.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-1">
+              {agentMissions.map((m) => (
+                <div key={m.mission_id} className="p-4 rounded-xl bg-brand-cream border border-line-default space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-ink-primary font-mono">{m.mission_id}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        m.stage === "COMPLETED" ? "bg-emerald-100 text-emerald-800" :
+                        m.stage === "HUMAN_CHECKPOINT" ? "bg-amber-100 text-amber-900 border border-amber-300" :
+                        "bg-blue-100 text-blue-800"
+                      }`}>
+                        {m.stage.replace("_", " ")}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-semibold text-ink-secondary">
+                      {m.allocated_kg > 0 ? `${m.allocated_kg} kg Allocated` : "Pre-Allocation"}
+                    </span>
+                  </div>
+
+                  {/* Checkpoint Banner if Held */}
+                  {m.requires_human_review && (
+                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs space-y-2">
+                      <div className="flex items-start gap-1.5 text-amber-900 font-semibold">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                        <span>Checkpoint Hold: {m.human_checkpoint_reason}</span>
+                      </div>
+                      <button
+                        onClick={() => handleResumeAgentMission(m.mission_id)}
+                        className="w-full py-1.5 rounded-md bg-amber-700 text-white font-semibold text-[11px] hover:bg-amber-800 transition-colors"
+                      >
+                        Coordinator Override & Resume
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Audit Trail Snippet */}
+                  <div className="space-y-1.5 pt-1 border-t border-line-default">
+                    <div className="text-[10px] font-bold text-ink-secondary uppercase tracking-wider">
+                      Execution Step Trace ({m.audit_trail.length} steps)
+                    </div>
+                    <div className="max-h-24 overflow-y-auto space-y-1 pr-1 text-[11px] font-mono">
+                      {m.audit_trail.map((entry, idx) => (
+                        <div key={idx} className="p-1.5 rounded bg-brand-paper border border-line-default flex items-center justify-between text-[10px]">
+                          <span className="font-bold text-brand-forest">[{entry.step}]</span>
+                          <span className="text-ink-secondary truncate max-w-[240px]">{entry.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 rounded-xl bg-brand-cream border border-line-default text-xs text-ink-secondary text-center space-y-1.5">
+              <Bot className="w-6 h-6 text-brand-forest mx-auto opacity-70" />
+              <div className="font-semibold text-ink-primary">No Autonomous Agent Missions Active</div>
+              <div className="text-[11px]">Click "Launch Autonomous Mission" above to trigger a live end-to-end LangGraph coordination run.</div>
+            </div>
+          )}
         </section>
 
         {/* Operational Queues */}
