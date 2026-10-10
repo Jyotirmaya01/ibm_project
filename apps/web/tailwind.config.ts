@@ -37,8 +37,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ["var(--font-plus-jakarta)", "sans-serif"],
-        body: ["var(--font-source-sans)", "sans-serif"],
+        display: ["var(--font-plus-jakarta)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"],
+        body: ["var(--font-source-sans)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"],
       },
       borderRadius: {
         card: "16px",
