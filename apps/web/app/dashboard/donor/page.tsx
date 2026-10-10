@@ -30,6 +30,11 @@ import {
   getSharedListings, 
   saveSharedListing 
 } from "@/lib/shared-listings";
+import AddressAutocomplete from "@/components/address-autocomplete";
+import { 
+  matchNearbyAshramsWithGeminiFlash, 
+  NearbyAshramMatch 
+} from "@/lib/gemini-flash-matcher";
 
 export default function DonorDashboardPage() {
   const router = useRouter();
@@ -78,12 +83,34 @@ export default function DonorDashboardPage() {
   const [aiEnhancedText, setAiEnhancedText] = useState<string>("");
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
+  // Google Gemini Flash Bot Ashram Matches State
+  const [flashMatches, setFlashMatches] = useState<NearbyAshramMatch[]>([]);
+  const [isMatchingWithFlash, setIsMatchingWithFlash] = useState<boolean>(false);
+  const [dispatchSuccessAshram, setDispatchSuccessAshram] = useState<string | null>(null);
+
   // Live listings state
   const [myListings, setMyListings] = useState<SharedListing[]>([]);
 
   const loadListings = () => {
     const all = getSharedListings();
     setMyListings(all);
+    // If we have listings and no matches computed yet, compute initial match
+    if (all.length > 0 && flashMatches.length === 0) {
+      const top = all[0];
+      matchNearbyAshramsWithGeminiFlash({
+        title: top.title,
+        category: top.category,
+        quantityValue: top.quantityValue,
+        quantityUnit: top.quantityUnit,
+        pickupAddress: top.locationAddress,
+        landmark: top.landmark,
+        storageCondition: top.storageCondition,
+        prepTime: top.prepTime,
+        donorName: top.donorName,
+      }).then((res) => {
+        setFlashMatches(res.matches);
+      });
+    }
   };
 
   useEffect(() => {
@@ -176,6 +203,23 @@ export default function DonorDashboardPage() {
             loadListings();
             setIsVerifying(false);
             setSuccessNotice(`Food listing successfully AI verified and published live! Nearby Ashrams can now view and accept it.`);
+
+            // Trigger Google Gemini Flash Matcher Bot
+            setIsMatchingWithFlash(true);
+            matchNearbyAshramsWithGeminiFlash({
+              title: dishTitle,
+              category: category,
+              quantityValue: Number(quantityValue),
+              quantityUnit: quantityUnit,
+              pickupAddress: locationAddress,
+              landmark: landmark,
+              storageCondition: storageCondition,
+              prepTime: prepTime,
+              donorName: contactPersonName.trim() || user?.fullName || "Food Donor",
+            }).then((res) => {
+              setFlashMatches(res.matches);
+              setIsMatchingWithFlash(false);
+            });
           }, 800);
         }, 1000);
       }, 1000);
@@ -603,22 +647,16 @@ export default function DonorDashboardPage() {
                 <label className="block text-xs font-bold text-gray-700">
                   Full Street Address for Volunteer Pickup *
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    required
-                    value={locationAddress}
-                    onChange={(e) => setLocationAddress(e.target.value)}
-                    placeholder="Venue name, door number, street, city..."
-                    className="w-full pl-3.5 pr-28 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F5D46]"
-                  />
-                  <div className="absolute right-2 top-2">
-                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-1 rounded-md flex items-center gap-1">
-                      <Navigation className="w-3 h-3 text-emerald-600" />
-                      GPS Geocoded
-                    </span>
-                  </div>
-                </div>
+                <AddressAutocomplete
+                  value={locationAddress}
+                  onChange={(addr) => setLocationAddress(addr)}
+                  onSelectSuggestion={(sug) => {
+                    setLocationAddress(sug.address);
+                    setLandmark(sug.landmark);
+                  }}
+                  placeholder="Start typing venue name, street, or catering hall (e.g. Indiranagar, Koramangala)..."
+                  required
+                />
               </div>
             </div>
 
@@ -755,6 +793,138 @@ export default function DonorDashboardPage() {
           )}
 
         </section>
+
+        {/* SECTION 1.5: Autonomous Google Gemini Flash Bot - Nearby Ashram Suggestions */}
+        {(flashMatches.length > 0 || isMatchingWithFlash) && (
+          <section className="p-6 rounded-3xl bg-gradient-to-br from-emerald-950 via-[#164333] to-[#0F2D22] text-white space-y-5 shadow-lg border border-emerald-700/50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-800/60 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-amber-400 text-emerald-950 shrink-0 font-bold shadow-md">
+                  <Sparkles className="w-5 h-5 text-emerald-950 animate-spin" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg sm:text-xl font-extrabold text-white">
+                      🤖 AnnaSetu AI Flash Agent — Auto-Matched Nearby Ashrams
+                    </h2>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                      Google Gemini 3.5 Flash Bot
+                    </span>
+                  </div>
+                  <p className="text-xs text-emerald-200/90 mt-0.5">
+                    Proximity analysis calculated from your pickup address. Ashrams ranked by urgency, travel time, and meal deficit.
+                  </p>
+                </div>
+              </div>
+
+              {isMatchingWithFlash && (
+                <div className="flex items-center gap-2 text-xs text-amber-300 font-mono bg-emerald-900/60 px-3 py-1.5 rounded-xl border border-amber-400/30 shrink-0">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Flash Bot Computing...</span>
+                </div>
+              )}
+            </div>
+
+            {/* Alert banner on dispatch */}
+            {dispatchSuccessAshram && (
+              <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-100 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>
+                    Priority dispatch alert sent to <strong>{dispatchSuccessAshram}</strong>! Handover protocol initialized.
+                  </span>
+                </div>
+                <Link
+                  href="/handover"
+                  className="px-3.5 py-1.5 rounded-xl bg-white text-emerald-900 font-bold text-xs hover:bg-emerald-100 transition-all shrink-0"
+                >
+                  Open Live Chat &amp; Handover →
+                </Link>
+              </div>
+            )}
+
+            {/* Match Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {flashMatches.map((ashram) => (
+                <div
+                  key={ashram.id}
+                  className={`p-4 rounded-2xl flex flex-col justify-between border transition-all ${
+                    ashram.isRecommended
+                      ? "bg-white/10 border-amber-400/60 shadow-md ring-1 ring-amber-400/30"
+                      : "bg-white/5 border-emerald-700/40 hover:bg-white/10"
+                  }`}
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-200 border border-emerald-400/20 uppercase tracking-wide">
+                        {ashram.type}
+                      </span>
+                      {ashram.isRecommended && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-400 text-emerald-950 font-sans shadow-xs">
+                          ⭐ Top Flash Pick
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <h3 className="font-bold text-sm text-white leading-snug">
+                        {ashram.name}
+                      </h3>
+                      <p className="text-[11px] text-emerald-200/80 mt-0.5 flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-amber-300 shrink-0" />
+                        <span>{ashram.address}</span>
+                      </p>
+                    </div>
+
+                    {/* Stats pills */}
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="p-2 rounded-xl bg-black/20 text-center">
+                        <div className="text-[10px] text-emerald-300 font-medium">Distance &amp; Time</div>
+                        <div className="text-xs font-extrabold text-white">
+                          {ashram.distanceKm} km • ~{ashram.travelTimeMinutes}m
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-black/20 text-center">
+                        <div className="text-[10px] text-amber-300 font-medium">Meal Deficit</div>
+                        <div className="text-xs font-extrabold text-white">
+                          {ashram.deficitMeals} meals
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* AI Rationale */}
+                    <div className="p-2.5 rounded-xl bg-emerald-950/70 border border-emerald-800/60 text-[11px] text-emerald-100 leading-relaxed font-sans">
+                      <p className="line-clamp-3">
+                        <span className="text-amber-300 font-bold">🤖 Flash Reason:</span> {ashram.aiRationale}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <div className="pt-3 border-t border-emerald-800/40 mt-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDispatchSuccessAshram(ashram.name);
+                        // Save to shared listings recipient
+                        if (myListings.length > 0) {
+                          const top = { ...myListings[0] };
+                          top.status = "ACCEPTED";
+                          saveSharedListing(top);
+                          loadListings();
+                        }
+                      }}
+                      className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-extrabold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>⚡ Send Priority Dispatch Alert</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* SECTION 2: Real Live Details Entered by Donor */}
         <section className="space-y-4">
