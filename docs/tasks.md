@@ -138,18 +138,18 @@ reservations or inventing completion.
 
 ## Phase 8 --- Chat, notifications and handover
 
--   [ ] Implement conversations and membership authorization.
--   [ ] Add realtime in-app chat.
--   [ ] Add contact disclosure preferences.
--   [ ] Add notification adapter and development mocks.
--   [ ] Integrate push notifications.
--   [ ] Add optional email/WhatsApp/calling providers only after
+-   [x] Implement conversations and membership authorization.
+-   [x] Add realtime in-app chat.
+-   [x] Add contact disclosure preferences.
+-   [x] Add notification adapter and development mocks.
+-   [x] Integrate push notifications.
+-   [x] Add optional email/WhatsApp/calling providers only after
     setup/consent.
--   [ ] Implement pickup assignment and ETA.
--   [ ] Implement handover confirmation and reason codes.
--   [ ] Record offered, collected, delivered, accepted and rejected
+-   [x] Implement pickup assignment and ETA.
+-   [x] Implement handover confirmation and reason codes.
+-   [x] Record offered, collected, delivered, accepted and rejected
     quantities.
--   [ ] Test duplicate callbacks and failed provider requests.
+-   [x] Test duplicate callbacks and failed provider requests.
 
 **Exit gate:** complete donor-to-recipient handover is accurately
 recorded; no false-success states.

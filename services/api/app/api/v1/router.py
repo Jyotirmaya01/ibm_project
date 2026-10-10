@@ -7,6 +7,8 @@ from app.api.v1.safety import router as safety_router
 from app.api.v1.recipients import router as recipients_router
 from app.api.v1.allocations import router as allocations_router
 from app.api.v1.agent import router as agent_router
+from app.api.v1.handover import router as handover_router
+from app.api.v1.chat import router as chat_router
 
 api_v1_router = APIRouter()
 api_v1_router.include_router(health_router)
@@ -17,3 +19,5 @@ api_v1_router.include_router(safety_router)
 api_v1_router.include_router(recipients_router)
 api_v1_router.include_router(allocations_router)
 api_v1_router.include_router(agent_router)
+api_v1_router.include_router(handover_router)
+api_v1_router.include_router(chat_router)

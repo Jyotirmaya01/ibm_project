@@ -336,6 +336,15 @@ export default function OperationsDashboard() {
               <span className="text-line-default">/</span>
               <span className="font-semibold text-sm text-ink-secondary">Operations Console</span>
             </div>
+            <div className="hidden lg:flex items-center gap-2 text-xs font-semibold pl-4">
+              <Link href="/handover" className="text-brand-forest hover:underline">
+                Digital Handover
+              </Link>
+              <span className="text-line-default">•</span>
+              <Link href="/recipients/capacity" className="text-brand-forest hover:underline">
+                Demand Portal
+              </Link>
+            </div>
           </div>
 
           {/* Role Switcher */}
