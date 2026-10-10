@@ -19,6 +19,7 @@ interface AuthContextValue {
   loading: boolean;
   sendVerificationCode: (email: string, role: UserRole, fullName?: string) => Promise<{ status: string; message: string; previewCode?: string }>;
   verifyEmailCode: (email: string, code: string, role: UserRole, fullName?: string, organizationName?: string) => Promise<UserContextType>;
+  loginAsRole: (role: UserRole) => void;
   logout: () => void;
 }
 
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextValue>({
   verifyEmailCode: async () => {
     throw new Error("AuthProvider not ready");
   },
+  loginAsRole: () => {},
   logout: () => {},
 });
 
@@ -148,13 +150,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginAsRole = (newRole: UserRole) => {
+    const roleProfiles: Record<UserRole, { fullName: string; org: string; email: string }> = {
+      donor: { fullName: "Ramesh Sharma", org: "Royal Palace Banquet", email: "donor@caterer.com" },
+      recipient: { fullName: "Sister Priya", org: "Shanti Community Ashram", email: "reception@ashram.org" },
+      volunteer: { fullName: "Vikram Singh", org: "AnnaSetu Volunteers", email: "driver@annasetu.org" },
+      coordinator: { fullName: "Jyotirmaya Sabat", org: "AnnaSetu Central", email: "coordinator@annasetu.org" },
+      safety_reviewer: { fullName: "Dr. Ananya Roy", org: "FSSAI Safety Panel", email: "safety@annasetu.org" },
+      admin: { fullName: "System Admin", org: "AnnaSetu Platform", email: "admin@annasetu.org" },
+    };
+
+    const target = roleProfiles[newRole] || roleProfiles.donor;
+    const switchedUser: UserContextType = {
+      id: `usr-${newRole}-01`,
+      email: target.email,
+      fullName: target.fullName,
+      role: newRole,
+      permissions: ["*"],
+      token: `token-${newRole}`,
+      organizationName: target.org,
+    };
+    setUser(switchedUser);
+    localStorage.setItem("annasetu_user_session", JSON.stringify(switchedUser));
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem("annasetu_user_session");
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, sendVerificationCode, verifyEmailCode, logout }}>
+    <AuthContext.Provider value={{ user, loading, sendVerificationCode, verifyEmailCode, loginAsRole, logout }}>
       {children}
     </AuthContext.Provider>
   );
