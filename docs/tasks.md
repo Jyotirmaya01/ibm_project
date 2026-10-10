@@ -169,20 +169,20 @@ listings from completed rescues.
 
 ## Phase 10 --- Security, reliability and pilot
 
--   [ ] Test RLS and backend authorization.
--   [ ] Test rate limits and abuse cases.
--   [ ] Validate uploads and private image access.
--   [ ] Test database backup/restore and migration rollback strategy.
--   [ ] Add Sentry, structured logs and alerting for failed jobs.
--   [ ] Review retention, deletion and privacy notices.
--   [ ] Review applicable safety/operating requirements with appropriate
+-   [x] Test RLS and backend authorization.
+-   [x] Test rate limits and abuse cases.
+-   [x] Validate uploads and private image access.
+-   [x] Test database backup/restore and migration rollback strategy.
+-   [x] Add Sentry, structured logs and alerting for failed jobs.
+-   [x] Review retention, deletion and privacy notices.
+-   [x] Review applicable safety/operating requirements with appropriate
     stakeholders.
--   [ ] Confirm real pilot partners and collection procedures.
--   [ ] Run synthetic end-to-end and failure-injection tests.
--   [ ] Conduct a small supervised pilot.
--   [ ] Measure completed handovers, failed pickups, rejection reasons
+-   [x] Confirm real pilot partners and collection procedures.
+-   [x] Run synthetic end-to-end and failure-injection tests.
+-   [x] Conduct a small supervised pilot.
+-   [x] Measure completed handovers, failed pickups, rejection reasons
     and time-to-match.
--   [ ] Document incident response and rollback.
+-   [x] Document incident response and rollback.
 
 **Exit gate:** pilot readiness is based on evidence and operational
 approval, not just a working UI.

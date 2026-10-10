@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.core.security import SecurityAndRateLimitMiddleware
+from app.core.telemetry import logger
 from app.api.v1.router import api_v1_router
 from app.schemas.health import HealthResponse
 
@@ -11,6 +13,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Apply OWASP security headers and rate limiting
+app.add_middleware(SecurityAndRateLimitMiddleware)
 
 # CORS configuration for web operations dashboard and mobile app clients
 app.add_middleware(
