@@ -1,0 +1,31 @@
+export const MobileTheme = {
+  colors: {
+    forest: "#1F5D46",
+    deep: "#164333",
+    leaf: "#3F8061",
+    sage: "#DDEBE1",
+    cream: "#FAF7EF",
+    paper: "#FFFFFF",
+    marigold: "#E8A83E",
+    terracotta: "#B85D43",
+    inkPrimary: "#1C2923",
+    inkSecondary: "#59665F",
+    lineDefault: "#DCE4DD",
+    stateSuccess: "#237447",
+    stateWarning: "#8A5A00",
+    stateDanger: "#B42318",
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
+  },
+  radii: {
+    sm: 8,
+    md: 12,
+    card: 16,
+    pill: 9999,
+  },
+};

@@ -1,0 +1,29 @@
+{
+  "name": "annasetu-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AnnaSetu AI — Food Rescue, Intelligent Allocation & Agentic Coordination",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace=apps/web run dev",
+    "dev:mobile": "npm --workspace=apps/mobile run start",
+    "dev:api": "python -m uvicorn services.api.app.main:app --reload --port 8000",
+    "lint": "npm run lint --workspaces --if-present",
+    "test:web": "npm --workspace=apps/web run test",
+    "test:api": "pytest services/api/tests"
+  },
+  "keywords": [
+    "food-rescue",
+    "agentic",
+    "or-tools",
+    "supabase",
+    "fastapi",
+    "expo",
+    "nextjs"
+  ],
+  "author": "AnnaSetu Team",
+  "license": "UNLICENSED"
+}
