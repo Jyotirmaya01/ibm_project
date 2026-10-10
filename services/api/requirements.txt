@@ -6,5 +6,7 @@ httpx>=0.27.0
 pytest>=8.2.0
 pytest-asyncio>=0.23.0
 python-dotenv>=1.0.1
+langgraph>=0.2.0
+langchain-core>=0.3.0
 # Note: In production Docker (Linux x86_64/arm64) and x86_64 environments, install ortools:
 # ortools>=9.10.4067

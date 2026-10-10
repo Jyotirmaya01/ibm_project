@@ -549,8 +549,43 @@ claim a live integration works when mocked.
 - **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
 - **Known issues/blockers:** None.
 - **Mocked/unconfigured integrations:** None.
+- **Last known working commit:** `5971bcd` (Restored loginAsRole).
+- **Next action:** Verify GitHub Actions CI green run.
+
+#### 2026-10-10 (Session 12) --- CI Pipeline Hardening, Typecheck & Full Build Verification
+
+- **Phase/task:** GitHub Actions CI Fix, Backend Dependency Parity, and Workspace Typecheck Verification
+- **Decisions:**
+  - **CI Workflow Resolution (`.github/workflows/ci.yml`):**
+    - Added `packages/design-tokens/tsconfig.json` enabling `tsc` build step to compile `dist/index.js` and `dist/index.d.ts` cleanly in CI.
+    - Added explicit `npm run typecheck` (`tsc --noEmit`) step in `web-checks` pipeline job before `npm run build`.
+    - Added `PYTHONPATH: .` environment variable to `backend-checks` job for reliable root imports in Ubuntu GitHub Actions runners.
+  - **Backend Dependency Parity (`services/api/requirements.txt` & `pyproject.toml`):**
+    - Added missing runtime dependencies `langgraph>=0.2.0` and `langchain-core>=0.3.0` to `requirements.txt` and `pyproject.toml`, resolving `ModuleNotFoundError: No module named 'langgraph'` during CI pytest runs.
+  - **Role Switching Restoration (`apps/web/src/lib/auth-context.tsx`):**
+    - Restored `loginAsRole` in `AuthContextValue` and `AuthProvider` with complete 6-role switching support for the Operations Dashboard.
+  - **Workspace Script Ergonomics (`package.json`):**
+    - Added root `typecheck`, `build:tokens`, and `build:web` scripts for fast one-command verification across the monorepo.
+- **Files changed / created:**
+  - `packages/design-tokens/tsconfig.json`
+  - `.github/workflows/ci.yml`
+  - `.gitignore`
+  - `package.json`
+  - `apps/web/package.json`
+  - `services/api/requirements.txt`
+  - `services/api/pyproject.toml`
+  - `apps/web/src/lib/auth-context.tsx`
+  - `docs/memory.md`
+- **Tests/commands and actual results:**
+  - `python -m pytest services\api\tests` -> 38 passed in 0.72s.
+  - `python -m compileall services\api\app` -> All files compiled successfully with 0 syntax errors.
+  - `npm run typecheck` -> Compiled design tokens and web `tsc --noEmit` cleanly with 0 type errors.
+  - `npm run build:web` -> 15/15 static routes generated with 0 errors.
+- **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
+- **Known issues/blockers:** None.
+- **Mocked/unconfigured integrations:** None.
 - **Last known working commit:** Staged and synced to GitHub remote.
-- **Next action:** Project delivery complete and verified on live local daemons.
+- **Next action:** Verify GitHub Actions green build status.
 
 ## 10. Platform Delivery Status
 

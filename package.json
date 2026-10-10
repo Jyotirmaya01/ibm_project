@@ -11,6 +11,9 @@
     "dev:web": "npm --workspace=apps/web run dev",
     "dev:mobile": "npm --workspace=apps/mobile run start",
     "dev:api": "python -m uvicorn services.api.app.main:app --reload --port 8000",
+    "build:tokens": "npm --workspace=@annasetu/design-tokens run build",
+    "build:web": "npm --workspace=apps/web run build",
+    "typecheck": "npm --workspace=@annasetu/design-tokens run build && npm --workspace=apps/web run typecheck",
     "lint": "npm run lint --workspaces --if-present",
     "test:web": "npm --workspace=apps/web run test",
     "test:api": "pytest services/api/tests"
