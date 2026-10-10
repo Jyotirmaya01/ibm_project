@@ -181,13 +181,47 @@ claim a live integration works when mocked.
 - **Database/migration state:** `20261010000001_initial_schema.sql` written with RLS policies and state machines; `supabase/seed.sql` created with synthetic organizations and demand snapshots.
 - **Known issues/blockers:** PyPI does not distribute pre-built `ortools` wheels for `win_arm64`. An optimization adapter will be used so OR-Tools runs in Linux container / CI while local dev supports deterministic fallback.
 - **Mocked/unconfigured integrations:** Maps, Vision AI, Push Notifications, and WhatsApp providers configured in mock mode via `.env.example`.
-- **Last known working commit:** Pending initial git commit.
-- **Next action:** Phase 2 (Identity, Roles, Profiles & Authorization).
+- **Last known working commit:** `335a24f` (Scaffold baseline).
+- **Next action:** Phase 2 completed; proceed to Phase 3.
+
+#### 2026-10-10 (Session 2) --- Phase 2 Complete: Identity, Roles & Authorization
+
+- **Phase/task:** Phase 2 (Identity, roles and authorization)
+- **Decisions:**
+  - Implemented strict Permission Matrix (`services/api/app/security/permissions.py`) mapping granular capabilities for `donor`, `recipient`, `volunteer`, `coordinator`, `safety_reviewer`, and `admin`.
+  - Implemented JWT / session verification dependency (`services/api/app/security/auth.py`) with `get_current_user`, `require_role`, and `require_permission`.
+  - Implemented Audit Event recorder (`services/api/app/services/audit.py`) logging privileged events (`ORGANIZATION_VERIFIED`, `PROFILE_UPDATED`, etc.) into an authoritative trace buffer.
+  - Added REST endpoints for profile inspection (`/v1/auth/me`), profile updates (`/v1/auth/profile`), organization listing (`/v1/organizations`), and coordinator-only verification (`/v1/organizations/{id}/verify`).
+  - Added second database migration `supabase/migrations/20261010000002_auth_triggers.sql` creating the `handle_new_user()` trigger for automated profile creation upon `auth.users` sign-up, plus coordinator/admin RLS management policies.
+  - Built client-side `AuthProvider` in `apps/web/src/lib/auth-context.tsx` and integrated role-switching in the Next.js Operations Console (`apps/web/app/operations/page.tsx`).
+- **Files changed / created:**
+  - `services/api/app/schemas/auth.py`
+  - `services/api/app/security/auth.py`
+  - `services/api/app/security/permissions.py`
+  - `services/api/app/services/audit.py`
+  - `services/api/app/api/v1/auth.py`
+  - `services/api/app/api/v1/organizations.py`
+  - `services/api/app/api/v1/router.py`
+  - `services/api/tests/unit/test_auth_and_permissions.py`
+  - `supabase/migrations/20261010000002_auth_triggers.sql`
+  - `apps/web/src/lib/auth-context.tsx`
+  - `apps/web/app/layout.tsx`
+  - `apps/web/app/operations/page.tsx`
+- **Tests/commands and actual results:**
+  - `python -m pytest services\api\tests` -> 7 passed in 0.27s (testing unauthenticated rejection, role permissions, coordinator verification, unauthorized escalation prevention).
+  - `npm --workspace=apps/web run build` -> Next.js 14 compiled successfully (5/5 pages generated).
+- **Database/migration state:** `20261010000002_auth_triggers.sql` ready to accompany `20261010000001_initial_schema.sql`.
+- **Known issues/blockers:** None.
+- **Mocked/unconfigured integrations:** In local development without live Supabase cloud keys, JWT bearer handler accepts standard mock tokens (`mock-token-<role>`) to permit offline, deterministic unit testing.
+- **Last known working commit:** Pending commit for Phase 2.
+- **Next action:** Phase 3 (Food Listing and Photo Evidence).
 
 ## 10. Immediate next action
 
-Proceed with Phase 2:
-1. Implement authentication and role-based access control (Donor, Recipient, Volunteer, Coordinator, Safety Reviewer, Admin).
-2. Wire Supabase Auth client with role-aware route guards in Next.js and Expo.
-3. Add authorization tests across users and organizations.
+Proceed with Phase 3 (Food listing and safety evidence):
+1. Configure private storage bucket policy and signed URL retrieval.
+2. Implement compulsory photo upload validation (overhead dish photo, preparation time, quantity/unit, perishability, pickup window).
+3. Implement server-side listing state machine (`DRAFT -> SUBMITTED -> EVIDENCE_REVIEW -> AVAILABLE`).
+4. Build donor listing creation flow and recipient listing detail cards.
+
 
