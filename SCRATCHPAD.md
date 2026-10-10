@@ -44,6 +44,13 @@
 
 ---
 
+### 5. GitHub Repository
+| Repository | URL | Status |
+| :--- | :--- | :--- |
+| **AnnaSetu AI (ibm_project)** | [https://github.com/Jyotirmaya01/ibm_project](https://github.com/Jyotirmaya01/ibm_project) | **Public & Synchronized:** All branches, components, models, and docs are live on GitHub. |
+
+---
+
 ## 🔒 Strict Role Privacy & Isolation Architecture
 
 1. **Different Content on Login & Signup**:
