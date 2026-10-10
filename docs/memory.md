@@ -272,16 +272,49 @@ claim a live integration works when mocked.
 - **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
 - **Known issues/blockers:** None.
 - **Mocked/unconfigured integrations:** Vision adapter running with deterministic local inference.
-- **Last known working commit:** Pending commit for Phase 4.
-- **Next action:** Phase 5 (Recipient Demand and Capacity).
+- **Last known working commit:** `85ea6d3` (Phase 4 safety evidence workflow & FSSAI rules).
+- **Next action:** Phase 5 completed; proceed to Phase 6.
+
+#### 2026-10-10 (Session 5) --- Phase 5 Complete: Recipient Demand & Capacity Snapshots
+
+- **Phase/task:** Phase 5 (Recipient demand and capacity)
+- **Decisions:**
+  - Implemented timestamped Recipient Capacity models (`services/api/app/schemas/recipients.py`) capturing people served, gross meals needed, existing meals available, net meal deficit, storage capability (`refrigerated`, `dry_only`, `freezer`, `none`), safe storage limit (kg), and dietary preferences (`pure_veg`, `halal`, etc.).
+  - Implemented Recipient Capacity Service (`services/api/app/services/recipients.py`) with automatic demand freshness tracking: Demand older than 24 hours is automatically flagged as stale (`is_stale=True`) to prevent phantom or outdated food allocations.
+  - Built compatibility checking engine (`check_recipient_compatibility`):
+    - Rejects allocations exceeding the shelter's safe storage ceiling.
+    - Rejects dietary mismatches (e.g. non-veg food to pure_veg ashrams).
+    - Rejects stale demand until refreshed by the recipient.
+  - Added REST endpoints in `services/api/app/api/v1/recipients.py`:
+    - `POST /v1/recipients/capacity`: Submit or refresh capacity snapshot.
+    - `GET /v1/recipients/capacity`: List active capacity snapshots (excludes stale by default).
+    - `GET /v1/recipients/{id}/capacity`: Retrieve a specific organization's snapshot.
+  - Built Recipient Capacity Portal in Next.js (`apps/web/app/recipients/capacity/page.tsx`) enabling shelters and community kitchens to maintain their daily demand numbers and storage ceilings.
+- **Files changed / created:**
+  - `services/api/app/schemas/recipients.py`
+  - `services/api/app/services/recipients.py`
+  - `services/api/app/api/v1/recipients.py`
+  - `services/api/app/api/v1/router.py`
+  - `services/api/tests/unit/test_recipients.py`
+  - `apps/web/app/recipients/capacity/page.tsx`
+- **Tests/commands and actual results:**
+  - `python -m pytest services\api\tests` -> 17 passed in 0.30s (verified net deficit calculation, stale demand detection after 24h, max storage limit enforcement, and dietary incompatibility protection).
+  - `npm --workspace=apps/web run build` -> Next.js 14 compiled successfully (8/8 pages generated).
+- **Database/migration state:** `20261010000001_initial_schema.sql` and `20261010000002_auth_triggers.sql`.
+- **Known issues/blockers:** None.
+- **Mocked/unconfigured integrations:** None.
+- **Last known working commit:** Pending commit for Phase 5.
+- **Next action:** Phase 6 (Need-Based Allocation Optimizer & Transactional Reservations).
 
 ## 10. Immediate next action
 
-Proceed with Phase 5 (Recipient demand and capacity):
-1. Implement timestamped recipient capacity snapshots.
-2. Capture people served, meals needed, demand by food item, and storage capability.
-3. Implement demand freshness / expiry policy.
-4. Build recipient capacity update flow and API endpoints.
+Proceed with Phase 6 (Need-based optimizer and reservations):
+1. Write the deterministic multi-recipient allocation specification.
+2. Implement linear programming / integer optimization model (Google OR-Tools solver adapter with fallback).
+3. Filter by food safety eligibility, food compatibility, pickup deadline, and recipient safe capacity.
+4. Implement atomic quantity reservations and prevent double-claiming.
+5. Implement partial acceptance and dynamic release/reallocation upon recipient decline.
+
 
 
 
