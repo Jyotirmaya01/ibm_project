@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { apiUrl } from "./api-config";
 
 export type UserRole = "donor" | "recipient" | "volunteer" | "coordinator" | "safety_reviewer" | "admin";
 
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const sendVerificationCode = async (email: string, role: UserRole, fullName?: string) => {
     try {
-      const res = await fetch("http://localhost:8000/v1/auth/send-code", {
+      const res = await fetch(apiUrl("/v1/auth/send-code"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, role, full_name: fullName }),
@@ -100,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     try {
-      const res = await fetch("http://localhost:8000/v1/auth/verify-code", {
+      const res = await fetch(apiUrl("/v1/auth/verify-code"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

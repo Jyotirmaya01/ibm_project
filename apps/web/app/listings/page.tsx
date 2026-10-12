@@ -13,6 +13,7 @@ import {
   RefreshCw 
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { apiUrl } from "@/lib/api-config";
 
 interface FoodItem {
   id: string;
@@ -43,7 +44,7 @@ export default function ListingsFeedPage() {
   const fetchListings = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/v1/listings", {
+      const res = await fetch(apiUrl("/v1/listings"), {
         headers: { Authorization: `Bearer ${user?.token || "mock-token-recipient"}` },
       });
       if (res.ok) {

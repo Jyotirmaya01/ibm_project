@@ -14,6 +14,7 @@ import {
   Building2 
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { apiUrl } from "@/lib/api-config";
 
 export default function RecipientCapacityPage() {
   const { user } = useAuth();
@@ -51,7 +52,7 @@ export default function RecipientCapacityPage() {
         notes: "Daily capacity snapshot updated via AnnaSetu Web Portal",
       };
 
-      const res = await fetch("http://localhost:8000/v1/recipients/capacity", {
+      const res = await fetch(apiUrl("/v1/recipients/capacity"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

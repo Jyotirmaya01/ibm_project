@@ -15,6 +15,7 @@ import {
   AlertTriangle 
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { apiUrl } from "@/lib/api-config";
 
 export default function CreateListingPage() {
   const router = useRouter();
@@ -68,7 +69,7 @@ export default function CreateListingPage() {
       };
 
       // 1. Create draft
-      const createRes = await fetch("http://localhost:8000/v1/listings", {
+      const createRes = await fetch(apiUrl("/v1/listings"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -85,7 +86,7 @@ export default function CreateListingPage() {
       const listingData = await createRes.json();
 
       // 2. Attach compulsory photo
-      const photoRes = await fetch(`http://localhost:8000/v1/listings/${listingData.id}/photos`, {
+      const photoRes = await fetch(apiUrl(`/v1/listings/${listingData.id}/photos`), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -100,7 +101,7 @@ export default function CreateListingPage() {
       if (!photoRes.ok) throw new Error("Failed to attach photo evidence.");
 
       // 3. Publish
-      const publishRes = await fetch(`http://localhost:8000/v1/listings/${listingData.id}/publish`, {
+      const publishRes = await fetch(apiUrl(`/v1/listings/${listingData.id}/publish`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${user?.token || "mock-token-donor"}`

@@ -21,6 +21,7 @@ import {
   Zap
 } from "lucide-react";
 import { useAuth, UserRole } from "@/lib/auth-context";
+import { apiUrl } from "@/lib/api-config";
 
 interface HealthStatus {
   status: string;
@@ -105,7 +106,7 @@ export default function OperationsDashboard() {
   const fetchHealthAndData = async () => {
     setLoadingHealth(true);
     try {
-      const res = await fetch("http://localhost:8000/health");
+      const res = await fetch(apiUrl("/health"));
       if (res.ok) {
         const data = await res.json();
         setHealth(data);
@@ -121,7 +122,7 @@ export default function OperationsDashboard() {
     // Fetch organizations
     if (user?.token) {
       try {
-        const orgRes = await fetch("http://localhost:8000/v1/organizations", {
+        const orgRes = await fetch(apiUrl("/v1/organizations"), {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         if (orgRes.ok) {
@@ -134,7 +135,7 @@ export default function OperationsDashboard() {
 
       // Fetch safety review queue
       try {
-        const safetyRes = await fetch("http://localhost:8000/v1/safety/review-queue", {
+        const safetyRes = await fetch(apiUrl("/v1/safety/review-queue"), {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         if (safetyRes.ok) {
@@ -147,7 +148,7 @@ export default function OperationsDashboard() {
 
       // Fetch agent missions
       try {
-        const agentRes = await fetch("http://localhost:8000/v1/agent/missions", {
+        const agentRes = await fetch(apiUrl("/v1/agent/missions"), {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         if (agentRes.ok) {
@@ -160,7 +161,7 @@ export default function OperationsDashboard() {
 
       // Fetch audit logs
       try {
-        const auditRes = await fetch("http://localhost:8000/v1/audit/logs?limit=12", {
+        const auditRes = await fetch(apiUrl("/v1/audit/logs?limit=12"), {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         if (auditRes.ok) {
@@ -180,7 +181,7 @@ export default function OperationsDashboard() {
   const handleVerifyOrg = async (orgId: string, newStatus: string) => {
     if (!user?.token) return;
     try {
-      const res = await fetch(`http://localhost:8000/v1/organizations/${orgId}/verify?verification_status=${newStatus}`, {
+      const res = await fetch(apiUrl(`/v1/organizations/${orgId}/verify?verification_status=${newStatus}`), {
         method: "PATCH",
         headers: { Authorization: `Bearer ${user.token}` },
       });
@@ -199,7 +200,7 @@ export default function OperationsDashboard() {
   const handleClearSafetyHold = async (assessmentId: string) => {
     if (!user?.token) return;
     try {
-      const res = await fetch(`http://localhost:8000/v1/safety/reviews/${assessmentId}/decide`, {
+      const res = await fetch(apiUrl(`/v1/safety/reviews/${assessmentId}/decide`), {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -226,7 +227,7 @@ export default function OperationsDashboard() {
     if (!user?.token) return;
     try {
       const targetId = listingId || "00000000-0000-0000-0000-000000000001";
-      const res = await fetch(`http://localhost:8000/v1/allocations/optimize/${targetId}`, {
+      const res = await fetch(apiUrl(`/v1/allocations/optimize/${targetId}`), {
         method: "POST",
         headers: { Authorization: `Bearer ${user.token}` },
       });
@@ -245,7 +246,7 @@ export default function OperationsDashboard() {
   const handleAcceptAllocation = async (allocationId: string, qty: number) => {
     if (!user?.token) return;
     try {
-      const res = await fetch(`http://localhost:8000/v1/allocations/${allocationId}/accept`, {
+      const res = await fetch(apiUrl(`/v1/allocations/${allocationId}/accept`), {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -273,7 +274,7 @@ export default function OperationsDashboard() {
   const handleDeclineAllocation = async (allocationId: string) => {
     if (!user?.token) return;
     try {
-      const res = await fetch(`http://localhost:8000/v1/allocations/${allocationId}/decline`, {
+      const res = await fetch(apiUrl(`/v1/allocations/${allocationId}/decline`), {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -302,7 +303,7 @@ export default function OperationsDashboard() {
     if (!user?.token) return;
     try {
       const listingId = "00000000-0000-0000-0000-000000000001";
-      const res = await fetch(`http://localhost:8000/v1/agent/missions/start/${listingId}`, {
+      const res = await fetch(apiUrl(`/v1/agent/missions/start/${listingId}`), {
         method: "POST",
         headers: { Authorization: `Bearer ${user.token}` },
       });
@@ -321,7 +322,7 @@ export default function OperationsDashboard() {
   const handleResumeAgentMission = async (missionId: string) => {
     if (!user?.token) return;
     try {
-      const res = await fetch(`http://localhost:8000/v1/agent/missions/${missionId}/resume`, {
+      const res = await fetch(apiUrl(`/v1/agent/missions/${missionId}/resume`), {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",

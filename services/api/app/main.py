@@ -28,6 +28,7 @@ app.add_middleware(
 
 # Root health check endpoint for container/orchestrator liveness
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
+@app.get("/api/health", response_model=HealthResponse, tags=["Health"])
 async def root_health_check() -> HealthResponse:
     return HealthResponse(
         status="ok",
@@ -36,5 +37,7 @@ async def root_health_check() -> HealthResponse:
         engine="AnnaSetu AI Core"
     )
 
-# Versioned API routes
+# Versioned API routes (supports both direct /v1 and Vercel rewritten /api/v1)
 app.include_router(api_v1_router, prefix="/v1")
+app.include_router(api_v1_router, prefix="/api/v1")
+
