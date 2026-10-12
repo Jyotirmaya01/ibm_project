@@ -9,6 +9,8 @@ from app.schemas.safety import (
     SafetyAssessmentResponse,
     SafetyReviewDecision,
     EvidenceReviewStatus,
+    SpoilagePredictRequest,
+    SpoilagePredictResponse,
 )
 from app.services.listings import LISTING_DATABASE
 from app.services.safety_rules import (
@@ -16,6 +18,7 @@ from app.services.safety_rules import (
     evaluate_listing_safety,
     record_human_reviewer_decision,
     get_pending_safety_reviews,
+    predict_bio_thermal_spoilage,
 )
 
 router = APIRouter(tags=["Safety & Evidence Assessment"])
@@ -84,3 +87,15 @@ async def decide_safety_review(
         return updated
     except KeyError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found.")
+
+
+@router.post("/safety/spoilage-predict", response_model=SpoilagePredictResponse)
+async def predict_spoilage_window(
+    payload: SpoilagePredictRequest,
+) -> SpoilagePredictResponse:
+    """
+    AnnaRakshak AI — Predict dynamic bio-thermal spoilage decay, microbial growth risk,
+    and safe transit radius under Indian tropical temperatures.
+    """
+    return predict_bio_thermal_spoilage(payload)
+

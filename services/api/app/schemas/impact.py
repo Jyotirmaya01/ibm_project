@@ -25,3 +25,32 @@ class AuditLogResponse(BaseModel):
     resource_id: Optional[UUID] = None
     details: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ESGCertificateRequest(BaseModel):
+    donor_name: str = Field(default="Sabat Grand Banquet Hall", description="Name of corporate donor or caterer")
+    recipient_ashram_name: str = Field(default="Sri Krishna Sevashrama & Orphanage", description="Verified recipient shelter/ashram")
+    dish_title: str = Field(default="Royal Vegetable Pulao & Paneer Gravy", description="Description of rescued food")
+    quantity_meals: int = Field(default=120, ge=1, description="Number of meals rescued")
+    quantity_kg: Optional[float] = Field(default=None, description="Weight in kg (defaults to meals * 0.35kg)")
+    handover_otp: Optional[str] = Field(default="784920", description="Verified physical handover OTP")
+    event_reference: Optional[str] = Field(default="Corporate Banquet Rescue", description="Event or occasion note")
+
+
+class ESGCertificateResponse(BaseModel):
+    certificate_id: str
+    donor_name: str
+    recipient_ashram_name: str
+    dish_title: str
+    quantity_meals: int
+    quantity_kg: float
+    co2e_saved_kg: float
+    water_saved_liters: float
+    methane_prevented_kg: float
+    fssai_compliance_rating: str
+    verification_hash: str
+    qr_verification_payload: str
+    tax_exemption_clause: str
+    issued_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_valid: bool = True
+

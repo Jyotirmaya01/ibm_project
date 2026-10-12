@@ -366,6 +366,10 @@ export default function OperationsDashboard() {
               <Link href="/recipients/capacity" className="text-brand-forest hover:underline">
                 Demand Portal
               </Link>
+              <span className="text-line-default">•</span>
+              <Link href="/certificate" className="text-amber-700 font-bold hover:underline">
+                ESG & Spoilage Hub
+              </Link>
             </div>
           </div>
 

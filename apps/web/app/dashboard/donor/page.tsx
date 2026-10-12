@@ -22,7 +22,8 @@ import {
   Send,
   Navigation,
   FileCheck2,
-  AlertTriangle
+  AlertTriangle,
+  Award
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { 
@@ -294,6 +295,13 @@ export default function DonorDashboardPage() {
           </Link>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/certificate"
+              className="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-xs transition-colors"
+            >
+              <Award className="w-3.5 h-3.5" />
+              <span>ESG Certificate & Spoilage AI</span>
+            </Link>
 
             <button
               onClick={() => {
@@ -1035,26 +1043,37 @@ export default function DonorDashboardPage() {
                         <span>{item.locationAddress} ({item.landmark})</span>
                       </div>
 
-                      {/* If Accepted, show Handover details & Open Chat */}
-                      {item.status === "ACCEPTED" && (
-                        <div className="flex flex-wrap items-center gap-2">
-                          {item.handoverOtp && (
-                            <div className="p-2 rounded-xl bg-emerald-100 text-emerald-900 font-mono text-xs font-bold flex items-center gap-2">
-                              <span>Handover OTP: {item.handoverOtp}</span>
-                              <span className="text-[10px] text-emerald-800 font-sans font-normal">
-                                ({item.driverName})
-                              </span>
-                            </div>
-                          )}
-                          <Link
-                            href={`/handover?listingId=${item.id}&role=donor`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1F5D46] hover:bg-[#164333] text-white font-bold text-xs shadow-xs transition-all"
-                          >
-                            <span>Open Delivery & Live Chat</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </Link>
-                        </div>
-                      )}
+                      {/* Actions */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href="/certificate"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 font-bold text-xs hover:bg-amber-100 transition-colors shadow-2xs"
+                        >
+                          <Award className="w-3.5 h-3.5 text-amber-600" />
+                          <span>ESG Certificate</span>
+                        </Link>
+
+                        {/* If Accepted, show Handover details & Open Chat */}
+                        {item.status === "ACCEPTED" && (
+                          <>
+                            {item.handoverOtp && (
+                              <div className="p-2 rounded-xl bg-emerald-100 text-emerald-900 font-mono text-xs font-bold flex items-center gap-2">
+                                <span>Handover OTP: {item.handoverOtp}</span>
+                                <span className="text-[10px] text-emerald-800 font-sans font-normal">
+                                  ({item.driverName})
+                                </span>
+                              </div>
+                            )}
+                            <Link
+                              href={`/handover?listingId=${item.id}&role=donor`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1F5D46] hover:bg-[#164333] text-white font-bold text-xs shadow-xs transition-all"
+                            >
+                              <span>Open Delivery & Live Chat</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </>
+                        )}
+                      </div>
                     </div>
 
                   </div>

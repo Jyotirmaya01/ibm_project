@@ -29,6 +29,7 @@
 | Workspace | URL | Purpose & Features |
 | :--- | :--- | :--- |
 | **Agentic AI Coordinator** | [http://localhost:3000/agent](http://localhost:3000/agent) | LangGraph autonomous multi-agent orchestration console with real-time reasoning trace. |
+| **ESG Certificate & Spoilage AI Hub** | [http://localhost:3000/certificate](http://localhost:3000/certificate) | **Flagship Unique Feature:** Verified Government/ESG Carbon Credit & 80G Certificate Generator (with SHA-256 seal & printable format) + **AnnaRakshak Bio-Thermal Spoilage AI Matrix** (real-time decay curves, danger zone countdown, & safe transit radius corridor). |
 | **Operations Console** | [http://localhost:3000/operations](http://localhost:3000/operations) | Operations audit trail, impact metrics (meals rescued, CO₂ saved), active dispatches, and system health. |
 | **Browse Food Listings** | [http://localhost:3000/listings](http://localhost:3000/listings) | Public surplus food directory with safety breakdown. |
 | **Ashram Demand & Capacity** | [http://localhost:3000/recipients/capacity](http://localhost:3000/recipients/capacity) | Formal capacity registry for recording meal requirements and storage. |

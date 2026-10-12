@@ -167,3 +167,41 @@ async def test_reviewer_queue_and_authorized_clearance():
         assert clear_res.status_code == 200
         assert clear_res.json()["status"] == "ELIGIBLE_UNDER_RULES"
         assert "Verified verified thermal reheat" in clear_res.json()["reviewer_notes"]
+
+
+@pytest.mark.asyncio
+async def test_spoilage_prediction_calculations():
+    """Verify AnnaRakshak bio-thermal decay model under Indian conditions."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # Case 1: Fresh hot-insulated paneer gravy
+        hot_res = await client.post(
+            "/v1/safety/spoilage-predict",
+            json={
+                "food_category": "Dairy & Paneer Gravy",
+                "ambient_temp_celsius": 30.0,
+                "storage_condition": "HOT_INSULATED",
+                "hours_since_prep": 1.0,
+            },
+        )
+        assert hot_res.status_code == 200
+        hot_data = hot_res.json()
+        assert hot_data["decay_risk_level"] in ["OPTIMAL", "MODERATE"]
+        assert hot_data["safe_window_minutes_remaining"] > 180
+        assert hot_data["max_recommended_transit_radius_km"] > 10.0
+
+        # Case 2: Room temperature dal sitting for 4.5 hours in summer heat (34°C)
+        danger_res = await client.post(
+            "/v1/safety/spoilage-predict",
+            json={
+                "food_category": "Dal & Legumes",
+                "ambient_temp_celsius": 34.0,
+                "storage_condition": "ROOM_TEMPERATURE",
+                "hours_since_prep": 4.5,
+            },
+        )
+        assert danger_res.status_code == 200
+        danger_data = danger_res.json()
+        assert danger_data["danger_zone_active"] is True
+        assert danger_data["decay_risk_level"] in ["CRITICAL", "EXPIRED"]
+

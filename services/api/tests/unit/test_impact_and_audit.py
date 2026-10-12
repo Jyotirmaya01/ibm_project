@@ -113,3 +113,40 @@ async def test_audit_log_access_controlled():
         logs = coord_res.json()
         assert len(logs) > 0
         assert any(l["action"] == "TEST_SECURITY_CHECK" for l in logs)
+
+
+@pytest.mark.asyncio
+async def test_esg_certificate_generation_and_retrieval():
+    """Verify ESG Carbon Credit and Food Rescue certificate generation and SHA-256 validation."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        payload = {
+            "donor_name": "Sabat Grand Banquet Hall",
+            "recipient_ashram_name": "Sri Krishna Sevashrama",
+            "dish_title": "Royal Vegetable Pulao",
+            "quantity_meals": 150,
+            "handover_otp": "784920",
+        }
+        create_res = await client.post("/v1/impact/certificate", json=payload)
+        assert create_res.status_code == 200
+        cert = create_res.json()
+
+        assert cert["certificate_id"].startswith("AS-ESG-2026-")
+        assert cert["quantity_meals"] == 150
+        assert cert["quantity_kg"] == 52.5  # 150 * 0.35
+        assert cert["co2e_saved_kg"] == 131.25  # 52.5 * 2.5
+        assert cert["methane_prevented_kg"] == 9.45  # 52.5 * 0.18
+        assert cert["water_saved_liters"] == 42000.0  # 52.5 * 800
+        assert len(cert["verification_hash"]) == 64  # SHA-256 length
+        assert "tax_exemption_clause" in cert
+
+        # Retrieve by ID
+        get_res = await client.get(f"/v1/impact/certificate/{cert['certificate_id']}")
+        assert get_res.status_code == 200
+        assert get_res.json()["certificate_id"] == cert["certificate_id"]
+
+        # List all
+        list_res = await client.get("/v1/impact/certificates")
+        assert list_res.status_code == 200
+        assert len(list_res.json()) >= 1
+

@@ -11,7 +11,10 @@ import {
   CheckCircle2, 
   Clock, 
   HeartHandshake, 
-  Sparkles
+  Sparkles,
+  Award,
+  Leaf,
+  Thermometer
 } from "lucide-react";
 
 export default function HomePage() {
@@ -206,6 +209,72 @@ export default function HomePage() {
               </div>
             </div>
 
+          </div>
+        </section>
+
+        {/* Breakthrough Innovation Highlight: AnnaRakshak & ESG Carbon Credits */}
+        <section className="bg-gradient-to-br from-emerald-900 via-[#1F5D46] to-teal-900 rounded-3xl p-8 sm:p-12 text-white shadow-lg space-y-8">
+          <div className="max-w-3xl space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-800/90 border border-emerald-500 text-emerald-200 text-xs font-bold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Flagship Innovation: AnnaRakshak AI</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              Dynamic Spoilage Prediction & Verified ESG Carbon Credits
+            </h2>
+            <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
+              AnnaSetu pioneers real-time thermodynamic spoilage modeling under Indian tropical ambient temperatures alongside audited ESG & Section 80G tax-deductible carbon credit certificates for corporate banquet donors.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/15 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-bold">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">Government ESG & 80G Certificates</h3>
+                  <p className="text-[11px] text-emerald-200">Audited carbon credits & CSR reporting</p>
+                </div>
+              </div>
+              <p className="text-xs text-emerald-100 leading-relaxed">
+                Every verified food handover generates a tamper-proof certificate recording audited CO₂e averted (2.5x factor), virtual irrigation water saved, and landfill methane avoided with SHA-256 cryptographic sealing.
+              </p>
+              <div className="pt-1">
+                <Link
+                  href="/certificate"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-amber-200 transition-colors"
+                >
+                  <span>Explore Certificate Generator</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/15 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-400 text-emerald-950 flex items-center justify-center font-bold">
+                  <Thermometer className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">Bio-Thermal Kinetic Spoilage Model</h3>
+                  <p className="text-[11px] text-emerald-200">FSSAI Danger Zone (5°C - 60°C) Protection</p>
+                </div>
+              </div>
+              <p className="text-xs text-emerald-100 leading-relaxed">
+                Prevents foodborne bacterial multiplication using real-time decay curves. Calculates exact safe consumption countdowns and restricts recipient dispatch to safe transit radius corridors.
+              </p>
+              <div className="pt-1">
+                <Link
+                  href="/certificate"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300 hover:text-emerald-200 transition-colors"
+                >
+                  <span>Launch AnnaRakshak Simulator</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
 

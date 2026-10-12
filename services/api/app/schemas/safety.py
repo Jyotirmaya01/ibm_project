@@ -44,3 +44,25 @@ class SafetyAssessmentResponse(BaseModel):
 class SafetyReviewDecision(BaseModel):
     decision: EvidenceReviewStatus = Field(..., description="ELIGIBLE_UNDER_RULES, ON_HOLD, or REJECTED_BY_RULE")
     notes: str = Field(..., min_length=3, description="Reviewer justification and recorded findings")
+
+
+class SpoilagePredictRequest(BaseModel):
+    food_category: str = Field(default="Cooked Rice & Grains", description="Category: Cooked Rice & Grains, Dairy & Paneer Gravy, Dal & Legumes, Fried/Dry Snacks, Sweets/Desserts")
+    ambient_temp_celsius: float = Field(default=28.0, ge=-10.0, le=60.0, description="Current ambient temperature in Celsius")
+    storage_condition: str = Field(default="HOT_INSULATED", description="Storage: HOT_INSULATED, ROOM_TEMPERATURE, REFRIGERATED")
+    hours_since_prep: float = Field(default=1.5, ge=0.0, le=48.0, description="Hours elapsed since cooking/preparation")
+
+
+class SpoilagePredictResponse(BaseModel):
+    food_category: str
+    ambient_temp_celsius: float
+    storage_condition: str
+    hours_since_prep: float
+    safe_window_minutes_remaining: int
+    decay_risk_level: str = Field(description="OPTIMAL, MODERATE, CRITICAL, or EXPIRED")
+    microbial_risk_score: float = Field(description="Risk index from 0.0 (safest) to 100.0 (spoiled)")
+    danger_zone_active: bool = Field(description="True if temperature sits in FSSAI danger zone (5C - 60C)")
+    max_recommended_transit_radius_km: float
+    fssai_guideline_reference: str
+    recommended_action: str
+
